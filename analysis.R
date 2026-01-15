@@ -1,8 +1,89 @@
+#### This script performs the analysis on the simulation output ####
 library(tidyverse)
+#### analysis helper function ####
+get_performance <- function(results,
+                            aspect_var = NULL,
+                            param_regex = "(phi|zeta)",
+                            grouping_regex = "k\\d{1}",
+                            stat_regex = "(est|pop)"
+) {
+
+  custom_regex <- paste0("^", param_regex, "\\d{1,2}_", grouping_regex, "_", stat_regex)
+
+  ## compute bias
+  bias <- results |>
+    # bring results in wide format: 1 row per parameter (e.g., phi11), group, and stat (est(imate) or pop(ulation) value)
+    pivot_longer(
+      cols = matches(custom_regex),
+      names_to = c("parameter", "cluster", "stat"),
+      names_sep = "_"
+    ) |>
+    # and then back into wide format with est and pop in different columns
+    pivot_wider(names_from = stat, values_from = value) |>
+    mutate(
+      # compute bias
+      difference = est - pop,
+      # classify as either AR or CR:
+      ij     = str_extract(parameter, "(?<=phi)\\d{2}"),
+      i      = as.integer(str_sub(ij, 1, 1)),
+      j      = as.integer(str_sub(ij, 2, 2)),
+      phi_type = if_else(i == j, "AR", "CR")) |>
+    # only keep phi (not interested in zeta)
+    filter(phi_type %in% c("AR", "CR")) |>
+    # compute bias per parameter (grouped by aspect_var)
+    group_by(across(all_of(aspect_var)), parameter, cluster, phi_type) |>
+    summarize(AB = mean(difference, na.rm = TRUE),
+              .groups = "drop") |>
+    group_by(across(all_of(aspect_var)), phi_type) |>
+    summarize(mean_bias = mean(AB, na.rm = TRUE),
+              .groups = "drop") |>
+    pivot_wider(names_from = phi_type,
+                names_prefix = "meanbias_",
+                values_from = mean_bias)
+
+  ## compute ARI, local max percentage, computation time
+  outcomes <- results |>
+    group_by(across(all_of(aspect_var))) |>
+    summarize(mean_ARI = mean(ARI, na.rm = TRUE),
+              pct_localmax = mean(local_max, na.rm = TRUE),
+              mean_comptime = mean(duration/3600, na.rm = TRUE))
+
+  ## combine
+  if(is.null(aspect_var)) {
+    outcomes <- bind_cols(bias, outcomes)
+  } else {
+    outcomes <- bias |>
+      full_join(outcomes, by = aspect_var)
+  }
+
+
+  # add "aspect" and "level" columns
+  if (is.null(aspect_var)) {
+    outcomes <- outcomes |>
+      mutate(aspect = "overall", level = NA_character_, .before = everything())
+  } else {
+    outcomes <- outcomes |>
+      rename(level = !!aspect_var) |>
+      mutate(aspect = aspect_var, .before = level) |>
+      mutate(level = as.character(level))
+  }
+
+  return(outcomes)
+}
+
 
 # read data and sort by iteration
 results <- read_csv("output_sim.csv") |>
   arrange(iteration)
+
+# rename estimate columns (add _est suffix):
+est_cols <- names(results)[
+  str_detect(names(results), "^(phi|zeta)\\d{1,2}_k\\d{1}$")
+]
+names(est_cols) <- paste0(est_cols, "_est")
+results <- results |>
+  rename(all_of(est_cols))
+
 
 # names of the condition columns
 cond_cols <- c("n_obs", "n_clusters", "n_factors")
@@ -15,103 +96,7 @@ results |>
 results$nonconvergences |> table()
 # 1 non-converged start in 6 iterations
 
-#### duration and sensitivity to local maxima ####
-duration <- results |>
-  group_by(across(all_of(cond_cols))) |>
-  summarize(duration_hours = mean(duration)/3600, .groups = "drop")
-
-localmax <- results |>
-  group_by(across(all_of(cond_cols))) |>
-  summarize(pct_locmax = mean(local_max), .groups = "drop")
-
-#### bias and ARI ####
-# transform into long format (1 row per parameter)
-phi_long <- results |>
-  pivot_longer(
-    # get both estimates (e.g., phi_11_k1), and population parameters (phi_11_k1_pop)
-    cols = matches("^phi\\d{2}_k\\d+(?:_pop)?$"),
-    names_to  = "name",
-    values_to = "value"
-  ) |>
-  # remove NAs
-  drop_na(value)  |>
-  mutate(
-    # get source (estimate or population)
-    source = if_else(str_ends(name, "_pop"), "pop", "est"),
-    # which parameter?
-    param  = str_remove(name, "_pop$"),
-    # classify as either AR or CR:
-    ij     = str_extract(param, "(?<=phi)\\d{2}"),
-    i      = as.integer(str_sub(ij, 1, 1)),
-    j      = as.integer(str_sub(ij, 2, 2)),
-    phi_type = if_else(i == j, "AR", "CR")
-  )
-
-# extract population values per parameter (equal across all replications within a condition)
-pop <- phi_long |>
-  filter(source == "pop") |>
-  group_by(across(all_of(cond_cols)), param, phi_type) |>
-  summarise(pop_value = first(value), .groups = "drop")
-
-# mean estimates for each parameter across replications within a condition
-est <- phi_long |>
-  filter(source == "est") |>
-  group_by(across(all_of(cond_cols)), param, phi_type) |>
-  summarise(mean_estimate = mean(value), .groups = "drop")
-
-# combine estimates and population values
-combined <- est |>
-  full_join(pop, by = c(cond_cols, "param", "phi_type"))
-
-# bias per condition & phi_type (average across parameters of same type (AR/CR))
-bias <- combined |>
-  # compute bias by condition:
-  mutate(bias = mean_estimate - pop_value) |>
-  # average across parameters of the same type:
-  group_by(across(all_of(cond_cols)), phi_type) |>
-  summarise(bias = mean(bias), .groups = "drop") |>
-  # transform into wide format, with one column per type (each row corresponds to one condition)
-  pivot_wider(names_from = phi_type, values_from = bias, names_prefix = "bias_")  # -> bias_AR, bias_CR
-
-# ARI per condition (single ARI column)
-ari <- results |>
-  group_by(across(all_of(cond_cols))) |>
-  summarise(ARI = mean(ARI), .groups = "drop")   # uses 'ARI' column
-
-#### combine all results ####
-cond_summary <- ari |>
-  full_join(bias, by = cond_cols) |>
-  full_join(duration, by = cond_cols) |>
-  full_join(localmax, by = cond_cols)
-
-
-# 7) Aspect-level summary: for each aspect, average over the other aspects
-overall <- cond_summary |>
-  summarise(
-    ARI     = mean(ARI),
-    bias_AR = mean(bias_AR),
-    bias_CR = mean(bias_CR),
-    duration_hours = mean(duration_hours),
-    pct_locmax = mean(pct_locmax)
-  ) |>
-  mutate(aspect = "overall", level = "overall") |>
-  select(aspect, level, bias_AR, bias_CR, ARI, pct_locmax, duration_hours)
-
-aspects <- map_dfr(cond_cols, function(aspect) {
-  cond_summary |>
-    group_by(.data[[aspect]]) |>
-    summarise(
-      ARI     = mean(ARI, na.rm = TRUE),
-      bias_AR = mean(bias_AR, na.rm = TRUE),
-      bias_CR = mean(bias_CR, na.rm = TRUE),
-      duration_hours = mean(duration_hours),
-      pct_locmax = mean(pct_locmax),
-      .groups = "drop"
-    ) |>
-    rename(level = !!aspect) |>
-    mutate(aspect = aspect,
-           level = as.character(level)) |>
-    select(aspect, level, bias_AR, bias_CR, ARI, pct_locmax, duration_hours)
-})
-
-final_table <- bind_rows(overall, aspects)
+#### outcomes (bias, ARI, local maxima) ####
+performance <- map(c(list(NULL), as.list(cond_cols)),
+                   ~ get_performance(results, aspect_var = .x)) |>
+  list_rbind()
