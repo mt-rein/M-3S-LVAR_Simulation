@@ -43,8 +43,10 @@ get_performance <- function(results,
 
   ## compute ARI, local max percentage, computation time
   outcomes <- results |>
+    mutate(convergence_rate = (15-nonconvergences)/15) |>
     group_by(across(all_of(aspect_var))) |>
     summarize(mean_ARI = mean(ARI, na.rm = TRUE),
+              mean_convrate = mean(convergence_rate, na.rm = TRUE),
               pct_localmax = mean(local_max, na.rm = TRUE),
               mean_comptime = mean(duration/3600, na.rm = TRUE))
 
@@ -94,9 +96,17 @@ results |>
 # no warnings or errors
 
 results$nonconvergences |> table()
-# 1 non-converged start in 6 iterations
 
-#### outcomes (bias, ARI, local maxima) ####
+# maximum of 6 non-convergences
+
+#### duration in hours (detailed in unique conditions) ####
+mean(results$duration/3600)
+results |>
+  group_by(across(all_of(cond_cols))) |>
+  summarize(duration = mean(duration/3600, na.rm = TRUE))
+
+
+#### outcomes (bias, ARI, convergence rate, local maxima, duration) ####
 performance <- map(c(list(NULL), as.list(cond_cols)),
                    ~ get_performance(results, aspect_var = .x)) |>
   list_rbind()
