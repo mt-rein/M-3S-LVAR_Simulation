@@ -1,18 +1,26 @@
 #### This script performs the analysis on the simulation output ####
 library(tidyverse)
-#### analysis helper function ####
-get_performance <- function(results,
-                            aspect_var = NULL,
-                            param_regex = "(phi|zeta)",
-                            grouping_regex = "k\\d{1}",
-                            stat_regex = "(est|pop)"
+#### analysis helper functions ####
+get_performance <- function(
+  results,
+  aspect_var = NULL,
+  param_regex = "(phi|zeta)",
+  grouping_regex = "k\\d{1}",
+  stat_regex = "(est|pop)"
 ) {
-
-  custom_regex <- paste0("^", param_regex, "\\d{1,2}_", grouping_regex, "_", stat_regex)
+  custom_regex <- paste0(
+    "^",
+    param_regex,
+    "\\d{1,2}_",
+    grouping_regex,
+    "_",
+    stat_regex
+  )
 
   ## compute bias
   bias <- results |>
-    # bring results in wide format: 1 row per parameter (e.g., phi11), group, and stat (est(imate) or pop(ulation) value)
+    # bring results in wide format: 1 row per parameter (e.g., phi11), group,
+    # and stat (est(imate) or pop(ulation) value)
     pivot_longer(
       cols = matches(custom_regex),
       names_to = c("parameter", "cluster", "stat"),
@@ -24,40 +32,45 @@ get_performance <- function(results,
       # compute bias
       difference = est - pop,
       # classify as either AR or CR:
-      ij     = str_extract(parameter, "(?<=phi)\\d{2}"),
-      i      = as.integer(str_sub(ij, 1, 1)),
-      j      = as.integer(str_sub(ij, 2, 2)),
-      phi_type = if_else(i == j, "AR", "CR")) |>
+      ij = str_extract(parameter, "(?<=phi)\\d{2}"),
+      i = as.integer(str_sub(ij, 1, 1)),
+      j = as.integer(str_sub(ij, 2, 2)),
+      phi_type = if_else(i == j, "AR", "CR")
+    ) |>
     # only keep phi (not interested in zeta)
     filter(phi_type %in% c("AR", "CR")) |>
     # compute bias per parameter (grouped by aspect_var)
     group_by(across(all_of(aspect_var)), parameter, cluster, phi_type) |>
-    summarize(AB = mean(difference, na.rm = TRUE),
-              .groups = "drop") |>
+    summarize(AB = mean(difference, na.rm = TRUE), .groups = "drop") |>
     group_by(across(all_of(aspect_var)), phi_type) |>
-    summarize(mean_bias = mean(AB, na.rm = TRUE),
-              .groups = "drop") |>
-    pivot_wider(names_from = phi_type,
-                names_prefix = "meanbias_",
-                values_from = mean_bias)
+    summarize(mean_bias = mean(AB, na.rm = TRUE), .groups = "drop") |>
+    pivot_wider(
+      names_from = phi_type,
+      names_prefix = "meanbias_",
+      values_from = mean_bias
+    )
 
   ## compute ARI, local max percentage, computation time
   outcomes <- results |>
-    mutate(convergence_rate = (15-nonconvergences)/15) |>
+    mutate(
+      convergence_rate = (15 - nonconvergences) / 15,
+      local_max = (proxy_loglik - solution_loglik) > .001
+    ) |>
     group_by(across(all_of(aspect_var))) |>
-    summarize(mean_ARI = mean(ARI, na.rm = TRUE),
-              mean_convrate = mean(convergence_rate, na.rm = TRUE),
-              pct_localmax = mean(local_max, na.rm = TRUE),
-              mean_comptime = mean(duration/3600, na.rm = TRUE))
+    summarize(
+      mean_ARI = mean(ARI, na.rm = TRUE),
+      mean_convrate = mean(convergence_rate, na.rm = TRUE),
+      pct_localmax = mean(local_max, na.rm = TRUE),
+      mean_comptime = mean(duration / 3600, na.rm = TRUE)
+    )
 
   ## combine
-  if(is.null(aspect_var)) {
+  if (is.null(aspect_var)) {
     outcomes <- bind_cols(bias, outcomes)
   } else {
     outcomes <- bias |>
       full_join(outcomes, by = aspect_var)
   }
-
 
   # add "aspect" and "level" columns
   if (is.null(aspect_var)) {
@@ -71,6 +84,37 @@ get_performance <- function(results,
   }
 
   return(outcomes)
+}
+
+comparison_proxy <- function(results, aspect_var = NULL) {
+  output <- results |>
+    mutate(diff = proxy_loglik - solution_loglik) |>
+    group_by(across(all_of(aspect_var))) |>
+    summarize(
+      mean_diff = mean(diff, na.rm = TRUE),
+      max_diff = max(diff, na.rm = TRUE),
+      mean_avg_diff_post = mean(avg_diff_post, na.rm = TRUE),
+      mean_max_diff_post = mean(max_diff_post, na.rm = TRUE),
+      mean_avg_diff_phi = mean(avg_diff_phi, na.rm = TRUE),
+      mean_avg_diff_zeta = mean(avg_diff_zeta, na.rm = TRUE),
+      mean_avg_diff_nuisance = mean(avg_diff_nuisance, na.rm = TRUE),
+      mean_max_diff_phi = mean(max_diff_phi, na.rm = TRUE),
+      mean_max_diff_zeta = mean(max_diff_zeta, na.rm = TRUE),
+      mean_max_diff_nuisance = mean(max_diff_nuisance, na.rm = TRUE)
+    )
+
+  # add "aspect" and "level" columns
+  if (is.null(aspect_var)) {
+    output <- output |>
+      mutate(aspect = "overall", level = NA_character_, .before = everything())
+  } else {
+    output <- output |>
+      rename(level = !!aspect_var) |>
+      mutate(aspect = aspect_var, .before = level) |>
+      mutate(level = as.character(level))
+  }
+
+  return(output)
 }
 
 
@@ -100,13 +144,25 @@ results$nonconvergences |> table()
 # maximum of 6 non-convergences
 
 #### duration in hours (detailed in unique conditions) ####
-mean(results$duration/3600)
+mean(results$duration / 3600)
 results |>
   group_by(across(all_of(cond_cols))) |>
-  summarize(duration = mean(duration/3600, na.rm = TRUE))
+  summarize(duration = mean(duration / 3600, na.rm = TRUE))
 
 
 #### outcomes (bias, ARI, convergence rate, local maxima, duration) ####
-performance <- map(c(list(NULL), as.list(cond_cols)),
-                   ~ get_performance(results, aspect_var = .x)) |>
+performance <- map(
+  c(list(NULL), as.list(cond_cols)),
+  ~ get_performance(results, aspect_var = .x)
+) |>
   list_rbind()
+print(performance, width = Inf)
+
+#### inspect differences between empirical and proxy solution ####
+comparison <- map(
+  c(list(NULL), as.list(cond_cols)),
+  ~ comparison_proxy(results, aspect_var = .x)
+) |>
+  list_rbind()
+
+print(comparison, width = Inf)

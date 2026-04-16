@@ -7,13 +7,14 @@ step1 <- function(data, measurementmodel, id) {
 
   # estimate MM in each block:
   for (m in 1:n_mb) {
-    MMoutput[[m]] <- lavaan::cfa(measurementmodel[[m]],
-                                 data = data)
+    MMoutput[[m]] <- lavaan::cfa(measurementmodel[[m]], data = data)
   }
 
-  output <- list("MMoutput" = MMoutput,
-                 "data" = data,
-                 "measurementmodel" = measurementmodel)
+  output <- list(
+    "MMoutput" = MMoutput,
+    "data" = data,
+    "measurementmodel" = measurementmodel
+  )
 
   return(output)
 }

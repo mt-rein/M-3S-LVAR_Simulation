@@ -1,8 +1,13 @@
-step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
-                  maxit = 100,
-                  convergence_criterion = 1e-6,
-                  true_clusters, verbose = FALSE) {
-
+step3 <- function(
+  step2output,
+  n_clusters,
+  n_starts = 25,
+  n_best_starts = 5,
+  maxit = 100,
+  convergence_criterion = 1e-6,
+  true_clusters,
+  verbose = FALSE
+) {
   #### 1) Preparations ####
   data <- step2output$data
   lambda_star <- step2output$lambda_star
@@ -21,7 +26,7 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
   ## rename the factor score variables in the data
   # to use them as indicators of the latent variables
   data <- data |>
-    dplyr::rename_with(~ factors_ind, tidyselect::all_of(factors))
+    dplyr::rename_with(~factors_ind, tidyselect::all_of(factors))
 
   #### 3) create OpenMx matrices ####
   # number of latent variables in model is number of factors times 2
@@ -37,105 +42,114 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
   free_phi <- matrix(TRUE, nrow = n_factors, ncol = n_factors)
   # expand free matrix with random intercept specification
   others <- matrix(FALSE, nrow = n_factors, ncol = n_factors)
-  free_phi <- rbind(cbind(free_phi, others),
-                    cbind(others, others))
+  free_phi <- rbind(cbind(free_phi, others), cbind(others, others))
 
   # create matrix of labels for regression coefficients:
-  labels_phi <- outer(factors, factors,
-                      FUN = function(i, j) paste0("phi_", i, "_", j))
+  labels_phi <- outer(factors, factors, FUN = function(i, j) {
+    paste0("phi_", i, "_", j)
+  })
   # expand label matrix with random intercept specification
   others <- matrix(NA, nrow = n_factors, ncol = n_factors)
-  labels_phi <- rbind(cbind(labels_phi, others),
-                      cbind(others, others))
+  labels_phi <- rbind(cbind(labels_phi, others), cbind(others, others))
 
   # create matrix of starting values for the free parameters
   values_phi <- matrix(.1, nrow = n_factors, ncol = n_factors)
   # expand values matrix with random intercept specification:
-  values_phi <- rbind(cbind(values_phi,
-                            matrix(0, nrow = n_factors, ncol = n_factors)),
-                      cbind(matrix(0, nrow = n_factors, ncol = n_factors),
-                            diag(n_factors)))
+  values_phi <- rbind(
+    cbind(values_phi, matrix(0, nrow = n_factors, ncol = n_factors)),
+    cbind(matrix(0, nrow = n_factors, ncol = n_factors), diag(n_factors))
+  )
 
-  amat <- OpenMx::mxMatrix("Full", name = "A",
-                           nrow = xdim, ncol = xdim,
-                           free = free_phi,
-                           values = values_phi,
-                           labels = labels_phi,
-                           lbound = NA,
-                           ubound = NA)
+  amat <- OpenMx::mxMatrix(
+    "Full",
+    name = "A",
+    nrow = xdim,
+    ncol = xdim,
+    free = free_phi,
+    values = values_phi,
+    labels = labels_phi,
+    lbound = NA,
+    ubound = NA
+  )
 
   ## B matrix (= exogenous covariates on latent constructs)
-  bmat <- OpenMx::mxMatrix("Zero", name = "B",
-                           nrow = xdim, ncol = udim)
+  bmat <- OpenMx::mxMatrix("Zero", name = "B", nrow = xdim, ncol = udim)
 
   ## D matrix (= exogenous covariates on observed variables)
-  dmat <- OpenMx::mxMatrix("Zero", name = "D",
-                           nrow = ydim, ncol = udim)
+  dmat <- OpenMx::mxMatrix("Zero", name = "D", nrow = ydim, ncol = udim)
 
   ## Q matrix (= innovation (co)variances)
   # create matrix that indicates free parameters:
   free_zeta <- matrix(TRUE, nrow = n_factors, ncol = n_factors)
   # expand free matrix with random intercept specification
   others <- matrix(FALSE, nrow = n_factors, ncol = n_factors)
-  free_zeta <- rbind(cbind(free_zeta, others),
-                     cbind(others, others))
+  free_zeta <- rbind(cbind(free_zeta, others), cbind(others, others))
 
   # create matrix of labels for innovation covariances:
   labels_zeta <- matrix(NA, n_factors, n_factors)
   # fill the matrix with symmetric labels
   for (i in 1:n_factors) {
     for (j in 1:n_factors) {
-      labels_zeta[i, j] <- paste0("zeta_",
-                                  factors[min(i, j)],
-                                  "_",
-                                  factors[max(i, j)])
+      labels_zeta[i, j] <- paste0(
+        "zeta_",
+        factors[min(i, j)],
+        "_",
+        factors[max(i, j)]
+      )
     }
   }
   # expand label matrix with random intercept specification
   others <- matrix(NA, nrow = n_factors, ncol = n_factors)
-  labels_zeta <- rbind(cbind(labels_zeta, others),
-                       cbind(others, others))
+  labels_zeta <- rbind(cbind(labels_zeta, others), cbind(others, others))
 
   # create matrix of starting values for the free parameters
   values_zeta <- matrix(.3, nrow = n_factors, ncol = n_factors)
   diag(values_zeta) <- 1
   # expand startvalue matrix with random intercept specification
   others <- matrix(0, nrow = n_factors, ncol = n_factors)
-  values_zeta <- rbind(cbind(values_zeta, others),
-                       cbind(others, others))
+  values_zeta <- rbind(cbind(values_zeta, others), cbind(others, others))
 
-  qmat <- OpenMx::mxMatrix("Full", name = "Q",
-                           nrow = xdim, ncol = xdim,
-                           free = free_zeta,
-                           values = values_zeta,
-                           labels = labels_zeta,
-                           lbound = NA,
-                           ubound = NA)
+  qmat <- OpenMx::mxMatrix(
+    "Full",
+    name = "Q",
+    nrow = xdim,
+    ncol = xdim,
+    free = free_zeta,
+    values = values_zeta,
+    labels = labels_zeta,
+    lbound = NA,
+    ubound = NA
+  )
 
   ## x0 and P0 (= initial means and (co)variances of the latent states)
   # x0:
-  xmat <- OpenMx::mxMatrix("Full", name = "x0",
-                           nrow = xdim, ncol = 1,
-                           free = FALSE,
-                           values = 0)
+  xmat <- OpenMx::mxMatrix(
+    "Full",
+    name = "x0",
+    nrow = xdim,
+    ncol = 1,
+    free = FALSE,
+    values = 0
+  )
 
   #P0:
   # create matrix that indicates free parameters
   free_P0 <- matrix(TRUE, nrow = n_factors, ncol = n_factors)
   # expand with random intercept specification:
   others <- matrix(FALSE, nrow = n_factors, ncol = n_factors)
-  free_P0 <- rbind(cbind(free_P0, others),
-                   cbind(others, free_P0))
+  free_P0 <- rbind(cbind(free_P0, others), cbind(others, free_P0))
 
   # create matrix of labels for P0:
   labels_P0 <- matrix(NA, n_factors, n_factors)
   # fill the matrix with symmetric labels
   for (i in 1:n_factors) {
     for (j in 1:n_factors) {
-      labels_P0[i, j] <- paste0("P0_",
-                                factors[min(i, j)],
-                                "_",
-                                factors[max(i, j)])
+      labels_P0[i, j] <- paste0(
+        "P0_",
+        factors[min(i, j)],
+        "_",
+        factors[max(i, j)]
+      )
     }
   }
   # expand with random intercept specification:
@@ -143,31 +157,34 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
   intercepts <- matrix(NA, n_factors, n_factors)
   for (i in 1:n_factors) {
     for (j in 1:n_factors) {
-      intercepts[i, j] <- paste0("P0_icp_",
-                                 factors[min(i, j)],
-                                 "_",
-                                 factors[max(i, j)])
+      intercepts[i, j] <- paste0(
+        "P0_icp_",
+        factors[min(i, j)],
+        "_",
+        factors[max(i, j)]
+      )
     }
   }
-  labels_P0 <- rbind(cbind(labels_P0, others),
-                     cbind(others, intercepts))
+  labels_P0 <- rbind(cbind(labels_P0, others), cbind(others, intercepts))
 
   # create matrix of starting values:
   values_P0 <- matrix(10, nrow = n_factors, ncol = n_factors)
   diag(values_P0) <- 100
   others <- matrix(0, nrow = n_factors, ncol = n_factors)
-  values_P0 <- rbind(cbind(values_P0, others),
-                     cbind(others, values_P0))
+  values_P0 <- rbind(cbind(values_P0, others), cbind(others, values_P0))
 
-  pmat <- OpenMx::mxMatrix("Full", name = "P0",
-                           nrow = xdim, ncol = xdim,
-                           free = free_P0,
-                           values = values_P0,
-                           labels = labels_P0)
+  pmat <- OpenMx::mxMatrix(
+    "Full",
+    name = "P0",
+    nrow = xdim,
+    ncol = xdim,
+    free = free_P0,
+    values = values_P0,
+    labels = labels_P0
+  )
 
   # u (= covariates)
-  umat <- OpenMx::mxMatrix("Zero", name = "u",
-                           nrow = udim, ncol = 1)
+  umat <- OpenMx::mxMatrix("Zero", name = "u", nrow = udim, ncol = 1)
 
   #### 4) create OpenMx models ####
   # create a list of models (one for each individual):
@@ -180,36 +197,56 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
     # C matrix (= factor loadings, here fixed to lambda_star)
     values <- matrix(0, nrow = n_factors, ncol = n_factors)
     diag(values) <- lambda_star[i, ]
-    cmat <- OpenMx::mxMatrix("Full", name = "C",
-                             nrow = ydim, ncol = xdim,
-                             free = FALSE,
-                             values = values,
-                             dimnames = list(factors_ind,
-                                             c(paste0(factors),
-                                               paste0("intercept_", factors))
-                             )
+    cmat <- OpenMx::mxMatrix(
+      "Full",
+      name = "C",
+      nrow = ydim,
+      ncol = xdim,
+      free = FALSE,
+      values = values,
+      dimnames = list(
+        factors_ind,
+        c(paste0(factors), paste0("intercept_", factors))
+      )
     )
     # R matrix (= measurement noise, here fixed to theta_star)
-    rmat <- OpenMx::mxMatrix("Diag", name = "R",
-                             nrow = ydim, ncol = ydim,
-                             free = FALSE,
-                             values = theta_star[i, ]
+    rmat <- OpenMx::mxMatrix(
+      "Diag",
+      name = "R",
+      nrow = ydim,
+      ncol = ydim,
+      free = FALSE,
+      values = theta_star[i, ]
     )
 
     # crate model and store in list
-    personmodel_list[[i]] <- OpenMx::mxModel(name = personmodelnames[i],
-                                             amat, bmat, cmat, dmat,
-                                             qmat, rmat, xmat, pmat,
-                                             umat,
-                                             OpenMx::mxExpectationStateSpace(
-                                               "A", "B", "C", "D",
-                                               "Q", "R", "x0", "P0",
-                                               "u"),
-                                             OpenMx::mxFitFunctionML(),
-                                             OpenMx::mxData(
-                                               data[data[, id] == i,
-                                                    factors_ind],
-                                               "raw")
+    personmodel_list[[i]] <- OpenMx::mxModel(
+      name = personmodelnames[i],
+      amat,
+      bmat,
+      cmat,
+      dmat,
+      qmat,
+      rmat,
+      xmat,
+      pmat,
+      umat,
+      OpenMx::mxExpectationStateSpace(
+        "A",
+        "B",
+        "C",
+        "D",
+        "Q",
+        "R",
+        "x0",
+        "P0",
+        "u"
+      ),
+      OpenMx::mxFitFunctionML(),
+      OpenMx::mxData(
+        data[data[, id] == i, factors_ind],
+        "raw"
+      )
     )
   }
   names(personmodel_list) <- personmodelnames
@@ -255,17 +292,23 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
       if (it > 1) {
         post0 <- post
         # update posteriors:
-        post <- EStep(pi_ks = class_proportions, ngroup = n_persons,
-                      nclus = n_clusters, loglik = personLL)
+        post <- EStep(
+          pi_ks = class_proportions,
+          ngroup = n_persons,
+          nclus = n_clusters,
+          loglik = personLL
+        )
         # compute (absolute) differences in posteriors
         delta <- abs(post - post0)
 
         if (verbose) {
-          print(paste0("Highest person-delta in posterior probabilities: ",
-                       max(rowSums(delta)) |> round(3),
-                       ". Average person-delta: ",
-                       mean(rowSums(delta)) |> round(3),
-                       "."))
+          print(paste0(
+            "Highest person-delta in posterior probabilities: ",
+            max(rowSums(delta)) |> round(3),
+            ". Average person-delta: ",
+            mean(rowSums(delta)) |> round(3),
+            "."
+          ))
         }
 
         # check if stable clustering has been achieved:
@@ -288,18 +331,22 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
           purrr::map(coef)
       } else {
         # in the first iteration, generate random start values in each cluster
-        startvalues <- generate_startvalues(n_clusters = n_clusters,
-                                            n_factors = n_factors,
-                                            labels_phi = labels_phi,
-                                            labels_zeta = labels_zeta)
+        startvalues <- generate_startvalues(
+          n_clusters = n_clusters,
+          n_factors = n_factors,
+          labels_phi = labels_phi,
+          labels_zeta = labels_zeta
+        )
       }
 
-      clustermodels_run <- MStep(n_clusters = n_clusters,
-                                 weights = post,
-                                 objectives = objectives,
-                                 model_list = personmodel_list,
-                                 startvalues = startvalues,
-                                 verbose = verbose)
+      clustermodels_run <- MStep(
+        n_clusters = n_clusters,
+        weights = post,
+        objectives = objectives,
+        model_list = personmodel_list,
+        startvalues = startvalues,
+        verbose = verbose
+      )
 
       # obtain person-wise LL in a n_persons x n_clusters matrix:
       personLL <- clustermodels_run |>
@@ -308,18 +355,30 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
       personLL <- personLL / (-2)
 
       # compute observed-data log likelihood from person-wise LL:
-      observed_data_LL <- compute_observed_data_LL(personLL = personLL,
-                                                   class_proportions = class_proportions)
+      observed_data_LL <- compute_observed_data_LL(
+        personLL = personLL,
+        class_proportions = class_proportions
+      )
 
       if (verbose) {
         if (it != 1) {
-          print(paste0("Iteration: ", it,
-                       ". Log Likelihood: ", round(observed_data_LL, 4),
-                       ". Change: ", round(observed_data_LL - observed_data_LL0, 6),
-                       "."))
+          print(paste0(
+            "Iteration: ",
+            it,
+            ". Log Likelihood: ",
+            round(observed_data_LL, 4),
+            ". Change: ",
+            round(observed_data_LL - observed_data_LL0, 6),
+            "."
+          ))
         } else {
-          print(paste0("Iteration: ", it,
-                       ". Log Likelihood: ", round(observed_data_LL, 4), "."))
+          print(paste0(
+            "Iteration: ",
+            it,
+            ". Log Likelihood: ",
+            round(observed_data_LL, 4),
+            "."
+          ))
         }
       }
 
@@ -338,21 +397,25 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
 
       # check if maxit has been reached:
       if (verbose && it == maxit) {
-        print(paste("Start", random_start,
-                    " did not arrive at a stable clustering."))
+        print(paste(
+          "Start",
+          random_start,
+          " did not arrive at a stable clustering."
+        ))
         if (random_start < n_starts) {
           print("Proceeding to next start.")
         }
       }
-
     }
 
     # save relevant objects in list:
-    all_starts[[random_start]] <- list("observed_data_LL" = observed_data_LL,
-                                       "class_proportions" = class_proportions,
-                                       "personLL" = personLL,
-                                       "clustermodels_run" = clustermodels_run,
-                                       "seed" = all_seeds[random_start])
+    all_starts[[random_start]] <- list(
+      "observed_data_LL" = observed_data_LL,
+      "class_proportions" = class_proportions,
+      "personLL" = personLL,
+      "clustermodels_run" = clustermodels_run,
+      "seed" = all_seeds[random_start]
+    )
   }
 
   if (verbose) {
@@ -379,11 +442,14 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
     personLL <- all_starts[[start_number]]$personLL
     clustermodels_run <- all_starts[[start_number]]$clustermodels_run
 
-
     # loop over iterations until convergence or max iterations are reached
     for (it in 1:maxit) {
-      post <- EStep(pi_ks = class_proportions, ngroup = n_persons,
-                    nclus = n_clusters, loglik = personLL)
+      post <- EStep(
+        pi_ks = class_proportions,
+        ngroup = n_persons,
+        nclus = n_clusters,
+        loglik = personLL
+      )
 
       # compute class proportions:
       class_proportions <- colMeans(post)
@@ -393,12 +459,14 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
       startvalues <- clustermodels_run |>
         purrr::map(coef)
 
-      clustermodels_run <- MStep(n_clusters = n_clusters,
-                                 weights = post,
-                                 objectives = objectives,
-                                 model_list = personmodel_list,
-                                 startvalues = startvalues,
-                                 verbose = verbose)
+      clustermodels_run <- MStep(
+        n_clusters = n_clusters,
+        weights = post,
+        objectives = objectives,
+        model_list = personmodel_list,
+        startvalues = startvalues,
+        verbose = verbose
+      )
 
       # obtain person-wise LL in a n_persons x n_clusters matrix:
       personLL <- clustermodels_run |>
@@ -407,13 +475,20 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
       personLL <- personLL / (-2)
 
       # compute observed-data log likelihood from person-wise LL:
-      observed_data_LL <- compute_observed_data_LL(personLL = personLL,
-                                                   class_proportions = class_proportions)
+      observed_data_LL <- compute_observed_data_LL(
+        personLL = personLL,
+        class_proportions = class_proportions
+      )
       if (verbose) {
-        print(paste0("Iteration: ", it,
-                     ". Log Likelihood: ", round(observed_data_LL, 4),
-                     ". Change: ", round(observed_data_LL - observed_data_LL0, 6),
-                     "."))
+        print(paste0(
+          "Iteration: ",
+          it,
+          ". Log Likelihood: ",
+          round(observed_data_LL, 4),
+          ". Change: ",
+          round(observed_data_LL - observed_data_LL0, 6),
+          "."
+        ))
       }
 
       # check convergence and break loop if applicable:
@@ -429,7 +504,10 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
       # check if maximum number of iterations has been reached:
       if (it == maxit) {
         if (verbose) {
-          print(paste("Max iterations reached without convergence. Start:", random_start))
+          print(paste(
+            "Max iterations reached without convergence. Start:",
+            random_start
+          ))
           if (random_start < n_best_starts) {
             print("Proceeding to next start.")
           }
@@ -448,12 +526,17 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
     }
 
     if (verbose) {
-      print(paste("Start", random_start, "out of", n_best_starts, "best starts completed."))
+      print(paste(
+        "Start",
+        random_start,
+        "out of",
+        n_best_starts,
+        "best starts completed."
+      ))
       if (random_start < n_best_starts) {
         print("Proceeding to next start.")
       }
     }
-
   }
 
   #### 6) find proxy maximum ####
@@ -464,14 +547,17 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
   post <- matrix(0, nrow = n_persons, ncol = n_clusters)
   post[cbind(1:n_persons, as.integer(true_clusters))] <- 1
 
-
   observed_data_LL0 <- -Inf
   for (it in 1:maxit) {
     ## E-step: update class membership and class proportions
     if (it > 1) {
       # update posteriors:
-      post <- EStep(pi_ks = class_proportions, ngroup = n_persons,
-                    nclus = n_clusters, loglik = personLL)
+      post <- EStep(
+        pi_ks = class_proportions,
+        ngroup = n_persons,
+        nclus = n_clusters,
+        loglik = personLL
+      )
     }
 
     # update class proportions:
@@ -484,17 +570,21 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
         purrr::map(coef)
     } else {
       # in the first iteration, generate random start values in each cluster
-      startvalues <- generate_startvalues(n_clusters = n_clusters,
-                                          n_factors = n_factors,
-                                          labels_phi = labels_phi,
-                                          labels_zeta = labels_zeta)
+      startvalues <- generate_startvalues(
+        n_clusters = n_clusters,
+        n_factors = n_factors,
+        labels_phi = labels_phi,
+        labels_zeta = labels_zeta
+      )
     }
 
-    clustermodels_run <- MStep(n_clusters = n_clusters,
-                               weights = post,
-                               objectives = objectives,
-                               model_list = personmodel_list,
-                               startvalues = startvalues)
+    clustermodels_run <- MStep(
+      n_clusters = n_clusters,
+      weights = post,
+      objectives = objectives,
+      model_list = personmodel_list,
+      startvalues = startvalues
+    )
 
     # obtain person-wise LL in a n_persons x n_clusters matrix:
     personLL <- clustermodels_run |>
@@ -503,21 +593,31 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
     personLL <- personLL / (-2)
 
     # compute observed-data log likelihood from person-wise LL:
-    observed_data_LL <- compute_observed_data_LL(personLL = personLL,
-                                                 class_proportions = class_proportions)
+    observed_data_LL <- compute_observed_data_LL(
+      personLL = personLL,
+      class_proportions = class_proportions
+    )
 
     if (verbose) {
       if (it != 1) {
-        print(paste0("Iteration: ", it,
-                     ". Log Likelihood: ", round(observed_data_LL, 4),
-                     ". Change: ", round(observed_data_LL - observed_data_LL0, 6),
-                     "."))
+        print(paste0(
+          "Iteration: ",
+          it,
+          ". Log Likelihood: ",
+          round(observed_data_LL, 4),
+          ". Change: ",
+          round(observed_data_LL - observed_data_LL0, 6),
+          "."
+        ))
       } else {
-        print(paste0("Iteration: ", it,
-                     ". Log Likelihood: ", round(observed_data_LL, 4),
-                     "."))
+        print(paste0(
+          "Iteration: ",
+          it,
+          ". Log Likelihood: ",
+          round(observed_data_LL, 4),
+          "."
+        ))
       }
-
     }
 
     # check convergence and break loop if applicable:
@@ -539,32 +639,51 @@ step3 <- function(step2output, n_clusters, n_starts = 25, n_best_starts = 5,
     }
   }
 
+  proxy_post <- as.data.frame(post)
+  rownames(proxy_post) <- unique_ids
+  colnames(proxy_post) <- paste0("cluster", 1:n_clusters)
+
+  proxy_est <- purrr::map(clustermodels_run, coef)
 
   #### 7) build output ####
   estimates <- purrr::map(best_models, coef)
   loglik <- best_loglik
-  post <- as.data.frame(best_post)
-  rownames(post) <- unique_ids
-  colnames(post) <- paste0("cluster", 1:n_clusters)
-  modal_assignment <- t(apply(post, MARGIN = 1, function(x) ifelse(x == max(x), 1, 0)))
-  class_proportions <- colMeans(post)
+  best_post <- as.data.frame(best_post)
+  rownames(best_post) <- unique_ids
+  colnames(best_post) <- paste0("cluster", 1:n_clusters)
+  modal_assignment <- t(apply(best_post, MARGIN = 1, function(x) {
+    ifelse(x == max(x), 1, 0)
+  }))
+  class_proportions <- colMeans(best_post)
 
-  clustering <- list("class_proportions" = class_proportions,
-                     "posterior_prob" = post,
-                     "modal_assignment" = modal_assignment)
+  clustering <- list(
+    "class_proportions" = class_proportions,
+    "posterior_prob" = best_post,
+    "modal_assignment" = modal_assignment
+  )
 
-  other <- list("loglik" = loglik,
-                "nonconvergences" = nonconvergences,
-                "proxy_maximum" = proxy_maximum,
-                "best_startnumber" = best_startnumber,
-                "best_seed" = best_seed,
-                "all_seeds" = all_seeds)
+  proxy <- list(
+    "proxy_loglik" = observed_data_LL,
+    "proxy_post" = proxy_post,
+    "proxy_est" = proxy_est
+  )
 
-  output <- list("data" = data,
-                 "estimates" = estimates,
-                 "clustering" = clustering,
-                 "other" = other)
+  other <- list(
+    "loglik" = loglik,
+    "nonconvergences" = nonconvergences,
+    "proxy_maximum" = proxy_maximum,
+    "best_startnumber" = best_startnumber,
+    "best_seed" = best_seed,
+    "all_seeds" = all_seeds
+  )
 
+  output <- list(
+    "data" = data,
+    "estimates" = estimates,
+    "clustering" = clustering,
+    "proxy" = proxy,
+    "other" = other
+  )
 
   return(output)
 }

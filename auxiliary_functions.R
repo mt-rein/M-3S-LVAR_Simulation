@@ -11,15 +11,17 @@ sim_VAR <- function(factors, obs, phi, zeta, mu, burn_in = 0) {
   # mu = latent means (a vector in case of multiple constructs)
   # burn_in = length of burn in (remove influence of initial random draw)
 
-
   # create empty dataframe of length obs + burn_in
   data <- as.data.frame(matrix(NA, nrow = burn_in + obs, ncol = factors))
   names(data) <- paste0("eta", 1:factors)
 
   for (i in seq_len(nrow(data))) {
-    innovation <-  MASS::mvrnorm(1, mu = rep(0, factors),
-                                 Sigma = zeta,
-                                 empirical = FALSE)
+    innovation <- MASS::mvrnorm(
+      1,
+      mu = rep(0, factors),
+      Sigma = zeta,
+      empirical = FALSE
+    )
     # simulate the first deviation (delta) only from the innovation
     if (i == 1) {
       delta <- innovation
@@ -48,7 +50,6 @@ sim_VAR <- function(factors, obs, phi, zeta, mu, burn_in = 0) {
 #### EStep() ####
 # perform the E-Step of the EM algorithm
 EStep <- function(pi_ks, ngroup, nclus, loglik) {
-
   max_g <- rep(0, ngroup)
   z_gks <- matrix(NA, nrow = ngroup, ncol = nclus)
 
@@ -68,12 +69,14 @@ EStep <- function(pi_ks, ngroup, nclus, loglik) {
 # taken from https://github.com/AndresFPA/mmgsem/blob/main/R/E_Step.R
 
 #### MStep() ####
-MStep <- function(n_clusters,
-                  weights,
-                  objectives,
-                  model_list,
-                  startvalues = startvalues,
-                  verbose = FALSE) {
+MStep <- function(
+  n_clusters,
+  weights,
+  objectives,
+  model_list,
+  startvalues = startvalues,
+  verbose = FALSE
+) {
   # create one model per cluster
   # each model is a multi-group model
   # where the person-models (each person is a "group") are weighted
@@ -81,16 +84,24 @@ MStep <- function(n_clusters,
   clustermodels <- vector(mode = "list", length = n_clusters)
   for (k in 1:n_clusters) {
     clustername <- paste0("model_k", k)
-    weighted_objectives <- paste(weights[, k], "*", objectives,
-                                 collapse = " + ")
-    model <- OpenMx::mxModel(clustername, model_list,
-                             OpenMx::mxAlgebraFromString(weighted_objectives,
-                                                         name = "weightedfit"),
-                             OpenMx::mxFitFunctionAlgebra("weightedfit"))
+    weighted_objectives <- paste(
+      weights[, k],
+      "*",
+      objectives,
+      collapse = " + "
+    )
+    model <- OpenMx::mxModel(
+      clustername,
+      model_list,
+      OpenMx::mxAlgebraFromString(weighted_objectives, name = "weightedfit"),
+      OpenMx::mxFitFunctionAlgebra("weightedfit")
+    )
     # add start values:
-    model <- OpenMx::omxSetParameters(model,
-                                      labels = names(startvalues[[k]]),
-                                      values = startvalues[[k]])
+    model <- OpenMx::omxSetParameters(
+      model,
+      labels = names(startvalues[[k]]),
+      values = startvalues[[k]]
+    )
 
     clustermodels[[k]] <- model
   }
@@ -98,17 +109,19 @@ MStep <- function(n_clusters,
 
   # run the models
   clustermodels_run <- clustermodels |>
-    purrr::map(OpenMx::mxRun,
-               silent = !verbose,
-               suppressWarnings = TRUE)
+    purrr::map(OpenMx::mxRun, silent = !verbose, suppressWarnings = TRUE)
 
   return(clustermodels_run)
 }
 
 #### generate_startvalues() ####
 # generate random starting values for OpenMx
-generate_startvalues <- function(n_clusters, n_factors,
-                                 labels_phi, labels_zeta) {
+generate_startvalues <- function(
+  n_clusters,
+  n_factors,
+  labels_phi,
+  labels_zeta
+) {
   startvalues <- vector(mode = "list", length = n_clusters)
   for (k in 1:n_clusters) {
     # generate a stationary matrix of regression coefficients
@@ -117,8 +130,10 @@ generate_startvalues <- function(n_clusters, n_factors,
     phistart_scaled <- phistart * (.9 / max(Mod(ev)))
 
     # generate a positive definitive matrix of innovation (co)variances
-    zetastart <- matrix(runif(n_factors * n_factors, 0.3, 1.5),
-                        nrow = n_factors)
+    zetastart <- matrix(
+      runif(n_factors * n_factors, 0.3, 1.5),
+      nrow = n_factors
+    )
     zetastartPD <- Matrix::nearPD(zetastart)$mat |> as.matrix()
 
     startvalues[[k]] <- c(
@@ -167,7 +182,8 @@ adjust_labels <- function(modal_matrix, true_clusters) {
     # turn the clusterassignment matrix (0s and 1s) into a vector (factor):
     clusterassignment_estimated <- colnames(temp)[
       max.col(temp)
-    ] |> as.factor()
+    ] |>
+      as.factor()
     # creates a cross table of estimated and true cluster assignments:
     crosstable <- table(clusterassignment_estimated, true_clusters)
     # compute the sum of the diagonal of the cross table and save it
