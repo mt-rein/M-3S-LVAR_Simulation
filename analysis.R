@@ -147,7 +147,11 @@ results$nonconvergences |> table()
 mean(results$duration / 3600)
 results |>
   group_by(across(all_of(cond_cols))) |>
-  summarize(duration = mean(duration / 3600, na.rm = TRUE))
+  summarize(
+    duration_avg = mean(duration / 3600, na.rm = TRUE),
+    min = min(duration),
+    max = max(duration)
+  )
 
 
 #### outcomes (bias, ARI, convergence rate, local maxima, duration) ####
