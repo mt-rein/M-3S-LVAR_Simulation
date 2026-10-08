@@ -100,15 +100,6 @@ results <- read_csv("output_sim.csv") |>
 results <- results |>
   filter(if_all(matches("^phi\\d{1,2}_k\\d{1}_se$"), ~ is.na(.x) | .x <= 1))
 
-# rename estimate columns (add _est suffix):
-est_cols <- names(results)[
-  str_detect(names(results), "^(phi|zeta)\\d{1,2}_k\\d{1}$")
-]
-names(est_cols) <- paste0(est_cols, "_est")
-results <- results |>
-  rename(all_of(est_cols))
-
-
 # names of the condition columns
 cond_cols <- c("n_obs", "n_clusters", "n_factors")
 
