@@ -18,64 +18,24 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   seed <- output_list[["seed"]] <- cond$seed[pos]
   set.seed(seed)
 
-  # change some global options in OpenMx:
-  OpenMx::mxOption(key = "Calculate Hessian", value = "No")
-  OpenMx::mxOption(key = "Standard Errors", value = "No")
-
   #### set data generation parameters ####
   # number of individuals:
   n_persons <- 60
   ## regression parameters:
   # if two factors:
   if (n_factors == 2) {
-    # Cluster 1: stable unconnected
-    phimat_k1_pop <- matrix(
-      c(
-        0.7,
-        0.0,
-        0.0,
-        0.7
-      ),
-      ncol = 2,
-      byrow = TRUE
-    )
+    # Cluster 1: interconnected
+    phimat_k1_pop <- matrix(c(0.3, 0.2, 0.2, 0.3), ncol = 2, byrow = TRUE)
 
-    # Cluster 2: interconnected
-    phimat_k2_pop <- matrix(
-      c(
-        0.3,
-        0.3,
-        0.3,
-        0.3
-      ),
-      ncol = 2,
-      byrow = TRUE
-    )
+    # Cluster 2: antagonistic
+    phimat_k2_pop <- matrix(c(0.1, -0.2, -0.1, -0.1), ncol = 2, byrow = TRUE)
 
     if (n_clusters == 4) {
       # Cluster 3: mixed
-      phimat_k3_pop <- matrix(
-        c(
-          0.6,
-          -0.3,
-          0.2,
-          0.1
-        ),
-        ncol = 2,
-        byrow = TRUE
-      )
+      phimat_k3_pop <- matrix(c(0.3, -0.3, 0.1, 0.9), ncol = 2, byrow = TRUE)
 
-      # Cluster 4: antagonistic
-      phimat_k4_pop <- matrix(
-        c(
-          0.3,
-          -0.2,
-          -0.2,
-          0.3
-        ),
-        ncol = 2,
-        byrow = TRUE
-      )
+      # Cluster 4: unconnected
+      phimat_k4_pop <- matrix(c(0.6, 0.1, 0.1, 0.6), ncol = 2, byrow = TRUE)
     } else {
       # create matrices with NA if there's only two clusters:
       phimat_k3_pop <- phimat_k4_pop <- matrix(NA, nrow = 2, ncol = 2)
@@ -84,49 +44,49 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
 
   # if four factors:
   if (n_factors == 4) {
-    # Cluster 1: stable unconnected
+    # Cluster 1: interconnected
     phimat_k1_pop <- matrix(
       c(
-        0.68,
-        0.00,
-        0.00,
-        0.00,
-        0.00,
-        0.68,
-        0.00,
-        0.00,
-        0.00,
-        0.00,
-        0.68,
-        0.00,
-        0.00,
-        0.00,
-        0.00,
-        0.68
+        0.3,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.4,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.3,
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.4
       ),
       ncol = 4,
       byrow = TRUE
     )
 
-    # Cluster 2: interconnected
+    # Cluster 2: antagonistic
     phimat_k2_pop <- matrix(
       c(
-        0.28,
-        0.25,
-        0.20,
-        0.18,
-        0.25,
-        0.28,
-        0.18,
-        0.20,
-        0.20,
-        0.18,
-        0.28,
-        0.25,
-        0.18,
-        0.20,
-        0.25,
-        0.28
+        0.1,
+        -0.2,
+        -0.1,
+        0.2,
+        -0.1,
+        -0.1,
+        -0.1,
+        -0.1,
+        -0.2,
+        -0.1,
+        0.2,
+        -0.1,
+        -0.1,
+        -0.2,
+        -0.1,
+        0.1
       ),
       ncol = 4,
       byrow = TRUE
@@ -136,46 +96,46 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       # Cluster 3: mixed
       phimat_k3_pop <- matrix(
         c(
-          0.60,
-          -0.25,
-          0.18,
-          0.05,
-          0.18,
-          0.12,
-          -0.15,
-          0.22,
-          -0.10,
-          0.22,
-          0.48,
-          -0.18,
-          0.12,
-          -0.05,
-          0.08,
-          0.22
+          0.3,
+          -0.3,
+          0.2,
+          -0.2,
+          0.1,
+          0.9,
+          -0.3,
+          0,
+          0.2,
+          -0.2,
+          0.4,
+          0.2,
+          -0.3,
+          0.1,
+          0.2,
+          0.7
         ),
         ncol = 4,
         byrow = TRUE
       )
 
-      # Cluster 4: antagonistic
+      # Cluster 4: unconnected
       phimat_k4_pop <- matrix(
         c(
-          0.30,
-          -0.12,
-          -0.08,
-          0.00,
-          -0.12,
-          0.30,
-          0.00,
-          -0.08,
-          -0.08,
-          0.00,
-          0.30,
-          -0.12,
-          0.00,
-          -0.08,
-          -0.12,
-          0.30
+          0.6,
+          0.1,
+          0,
+          0,
+          0.1,
+          0.6,
+          0.1,
+          0.1,
+          0,
+          0.1,
+          0.6,
+          0.1,
+          0.1,
+          0,
+          0,
+          0.6
         ),
         ncol = 4,
         byrow = TRUE
@@ -187,30 +147,135 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   }
 
   ## innovation variances
-  # fixed effect innovation covariance matrix is invariant across clusters
-  zetamat_pop <- matrix(.5, nrow = n_factors, ncol = n_factors)
-  diag(zetamat_pop) <- 1.5
+  # if two factors:
+  if (n_factors == 2) {
+    zetamat_k1_pop <- zetamat_k2_pop <- matrix(
+      c(292, -104, -104, 46),
+      ncol = 2,
+      byrow = TRUE
+    )
+
+    if (n_clusters == 4) {
+      zetamat_k3_pop <- zetamat_k4_pop <- zetamat_k1_pop
+    } else {
+      # create matrices with NA if there's only two clusters:
+      zetamat_k3_pop <- zetamat_k4_pop <- matrix(NA, nrow = 2, ncol = 2)
+    }
+  }
+
+  # if four factors:
+  if (n_factors == 4) {
+    zetamat_k1_pop <- zetamat_k2_pop <- matrix(
+      c(
+        293,
+        -103,
+        47,
+        -22,
+        -103,
+        157,
+        -27,
+        19,
+        47,
+        -27,
+        163,
+        -7,
+        -22,
+        19,
+        -7,
+        47
+      ),
+      ncol = 4,
+      byrow = TRUE
+    )
+
+    if (n_clusters == 4) {
+      zetamat_k3_pop <- zetamat_k3_pop <- zetamat_k1_pop
+    } else {
+      # create matrices with NA if there's only two clusters:
+      zetamat_k3_pop <- zetamat_k4_pop <- matrix(NA, nrow = 4, ncol = 4)
+    }
+  }
 
   ## grand means
   if (n_factors == 2) {
-    grandmeans <- c(5, 3)
+    grandmeans <- rep(0, 2)
   } else {
-    grandmeans <- c(5, 3, 6, 2)
+    grandmeans <- rep(0, 4)
   }
-  mu_variance <- matrix(.3, nrow = n_factors, ncol = n_factors)
-  diag(mu_variance) <- 1
+  mu_variance <- matrix(-15, nrow = n_factors, ncol = n_factors)
+  if (n_factors == 2) {
+    diag(mu_variance) <- c(60, 60)
+  }
+  if (n_factors == 4) {
+    diag(mu_variance) <- c(60, 60, 60, 60)
+  }
 
   ## measurement model parameters
   # loadings:
-  lambda <- replicate(n_factors, rep(.8, 4), simplify = FALSE) |>
-    lavaan::lav_matrix_bdiag()
+  lambda_f1_pop <- c(1, 0.9, 0.6, 0.7)
+  lambda_f2_pop <- c(1, 1.5, 1.4, 1.6)
+  if (n_factors == 4) {
+    lambda_f3_pop <- c(1, 0.8, 0.5, 0.9)
+    lambda_f4_pop <- c(1, 1.2, 1.3, 1.5)
+  } else {
+    lambda_f3_pop <- lambda_f4_pop <- rep(NA, 4)
+  }
+
+  if (n_factors == 2) {
+    lambda <- list(
+      f1 = lambda_f1_pop,
+      f2 = lambda_f2_pop
+    ) |>
+      lavaan::lav_matrix_bdiag()
+  }
+  if (n_factors == 4) {
+    lambda <- list(
+      f1 = lambda_f1_pop,
+      f2 = lambda_f2_pop,
+      f3 = lambda_f3_pop,
+      f4 = lambda_f4_pop
+    ) |>
+      lavaan::lav_matrix_bdiag()
+  }
 
   # residual variances:
-  theta <- rep(.36, n_factors * 4) |>
-    diag()
+  theta_f1_pop <- c(67, 195, 428, 351)
+  theta_f2_pop <- c(449, 204, 304, 369)
+  if (n_factors == 4) {
+    theta_f3_pop <- c(85, 187, 303, 330)
+    theta_f4_pop <- c(361, 201, 304, 351)
+  } else {
+    theta_f3_pop <- theta_f4_pop <- rep(NA, 4)
+  }
+
+  if (n_factors == 2) {
+    theta <- diag(c(theta_f1_pop, theta_f2_pop))
+  }
+  if (n_factors == 4) {
+    theta <- diag(c(
+      theta_f1_pop,
+      theta_f2_pop,
+      theta_f3_pop,
+      theta_f4_pop
+    ))
+  }
 
   # intercepts:
-  tau <- rep(1, n_factors * 4)
+  tau_f1_pop <- c(55, 53, 57, 59)
+  tau_f2_pop <- c(25, 19, 22, 31)
+  if (n_factors == 4) {
+    tau_f3_pop <- c(43, 41, 45, 47)
+    tau_f4_pop <- c(15, 9, 12, 21)
+  } else {
+    tau_f3_pop <- tau_f4_pop <- rep(NA, 4)
+  }
+
+  if (n_factors == 2) {
+    tau <- c(tau_f1_pop, tau_f2_pop)
+  }
+  if (n_factors == 4) {
+    tau <- c(tau_f1_pop, tau_f2_pop, tau_f3_pop, tau_f4_pop)
+  }
 
   #### generate data ####
   ## create cluster assignment vector:
@@ -243,15 +308,19 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     # get correct phi matrix:
     if (k_i == "cluster1") {
       phimat <- phimat_k1_pop
+      zetamat <- zetamat_k1_pop
     }
     if (k_i == "cluster2") {
       phimat <- phimat_k2_pop
+      zetamat <- zetamat_k2_pop
     }
     if (k_i == "cluster3") {
       phimat <- phimat_k3_pop
+      zetamat <- zetamat_k3_pop
     }
     if (k_i == "cluster4") {
       phimat <- phimat_k4_pop
+      zetamat <- zetamat_k4_pop
     }
 
     # generate person-specific latent means:
@@ -261,7 +330,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       factors = n_factors,
       obs = n_obs,
       phi = phimat,
-      zeta = zetamat_pop,
+      zeta = zetamat,
       mu = mu_i,
       burn_in = 10
     )
@@ -285,7 +354,12 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   data <- t(tau + lambda %*% t(eta[, eta_vars])) +
     epsilon |>
       as.data.frame()
-  colnames(data) <- paste0("v", 1:(n_factors * 4))
+  colnames(data) <- paste0(
+    "f",
+    rep(1:n_factors, each = 4),
+    "_v",
+    rep(1:4, times = n_factors)
+  )
   # add id, obs and true cluster variable:
   data$id <- eta$id
   data$obs <- eta$obs
@@ -306,12 +380,47 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     }
   }
 
-  # zeta
-  for (i in 1:4) {
-    for (j in i:4) {
-      # (j in i:4) ensures j >= i (diagonal + lower triangle)
-      out_name <- paste0("zeta", i, j, "_pop")
-      value <- ifelse(i <= n_factors && j <= n_factors, zetamat_pop[i, j], NA)
+  # zeta:
+  for (k in 1:4) {
+    # get zetamat of cluster k:
+    zetamat <- get(paste0("zetamat_k", k, "_pop"))
+    # loop over all entries, check if they exist, and extract value/set to NA:
+    for (i in 1:4) {
+      for (j in i:4) {
+        # (j in i:4) ensures j >= i (diagonal + upper triangle)
+        out_name <- paste0("zeta", i, j, "_k", k, "_pop")
+        value <- ifelse(i <= n_factors && j <= n_factors, zetamat[i, j], NA)
+        output_list[[out_name]] <- value
+      }
+    }
+  }
+
+  # loadings:
+  for (f in 1:4) {
+    lambda_f <- get(paste0("lambda_f", f, "_pop"))
+    for (v in 1:4) {
+      out_name <- paste0("lambda_f", f, "_v", v, "_pop")
+      value <- ifelse(f <= n_factors, lambda_f[v], NA)
+      output_list[[out_name]] <- value
+    }
+  }
+
+  # residual variances:
+  for (f in 1:4) {
+    theta_f <- get(paste0("theta_f", f, "_pop"))
+    for (v in 1:4) {
+      out_name <- paste0("theta_f", f, "_v", v, "_pop")
+      value <- ifelse(f <= n_factors, theta_f[v], NA)
+      output_list[[out_name]] <- value
+    }
+  }
+
+  # intercepts:
+  for (f in 1:4) {
+    tau_f <- get(paste0("tau_f", f, "_pop"))
+    for (v in 1:4) {
+      out_name <- paste0("tau_f", f, "_v", v, "_pop")
+      value <- ifelse(f <= n_factors, tau_f[v], NA)
       output_list[[out_name]] <- value
     }
   }
@@ -322,38 +431,26 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   if (n_factors == 2) {
     model_step1 <- list(
       "
-      f1 =~ v1 + v2 + v3 + v4
-      v1 ~ 1*1
-      f1 ~ NA*1
+      f1 =~ f1_v1 + f1_v2 + f1_v3 + f1_v4
       ",
       "
-      f2 =~ v5 + v6 + v7 + v8
-      v5 ~ 1*1
-      f2 ~ NA*1
+      f2 =~ f2_v1 + f2_v2 + f2_v3 + f2_v4
       "
     )
   }
   if (n_factors == 4) {
     model_step1 <- list(
       "
-      f1 =~ v1 + v2 + v3 + v4
-      v1 ~ 1*1
-      f1 ~ NA*1
+      f1 =~ f1_v1 + f1_v2 + f1_v3 + f1_v4
       ",
       "
-      f2 =~ v5 + v6 + v7 + v8
-      v5 ~ 1*1
-      f2 ~ NA*1
+      f2 =~ f2_v1 + f2_v2 + f2_v3 + f2_v4
       ",
       "
-      f3 =~ v9 + v10 + v11 + v12
-      v9 ~ 1*1
-      f3 ~ NA*1
+      f3 =~ f3_v1 + f3_v2 + f3_v3 + f3_v4
       ",
       "
-      f4 =~ v13 + v14 + v15 + v16
-      v13 ~ 1*1
-      f4 ~ NA*1
+      f4 =~ f4_v1 + f4_v2 + f4_v3 + f4_v4
       "
     )
   }
@@ -381,9 +478,72 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   #### Step 2 ####
   # only proceed if there is no error in step 1:
   if (!step1_error) {
+    ## extract MM estimates:
+    results_MM <- output_step1$result$result$mm_output
+    # loadings:
+    for (f in 1:4) {
+      if (f <= n_factors) {
+        PE_f <- lavaan::parameterEstimates(results_MM[[f]])
+        for (v in 1:4) {
+          item_name <- paste0("f", f, "_v", v)
+          out_name <- paste0("lambda_", item_name, "_est")
+          output_list[[out_name]] <- PE_f$est[
+            PE_f$lhs == paste0("f", f) &
+              PE_f$op == "=~" &
+              PE_f$rhs == item_name
+          ]
+        }
+      } else {
+        for (v in 1:4) {
+          out_name <- paste0("lambda_f", f, "_v", v, "_est")
+          output_list[[out_name]] <- NA
+        }
+      }
+    }
+
+    # residual variances:
+    for (f in 1:4) {
+      if (f <= n_factors) {
+        PE_f <- lavaan::parameterEstimates(results_MM[[f]])
+        for (v in 1:4) {
+          item_name <- paste0("f", f, "_v", v)
+          out_name <- paste0("theta_f", f, "_v", v, "_est")
+          output_list[[out_name]] <- PE_f$est[
+            PE_f$lhs == item_name &
+              PE_f$op == "~~" &
+              PE_f$rhs == item_name
+          ]
+        }
+      } else {
+        for (v in 1:4) {
+          out_name <- paste0("theta_f", f, "_v", v, "_est")
+          output_list[[out_name]] <- NA
+        }
+      }
+    }
+
+    # intercepts:
+    for (f in 1:4) {
+      if (f <= n_factors) {
+        PE_f <- lavaan::parameterEstimates(results_MM[[f]])
+        for (v in 1:4) {
+          item_name <- paste0("f", f, "_v", v)
+          out_name <- paste0("tau_f", f, "_v", v, "_est")
+          output_list[[out_name]] <- PE_f$est[
+            PE_f$lhs == item_name &
+              PE_f$op == "~1"
+          ]
+        }
+      } else {
+        for (v in 1:4) {
+          out_name <- paste0("tau_f", f, "_v", v, "_est")
+          output_list[[out_name]] <- NA
+        }
+      }
+    }
+
     output_step2 <- run_step2(
-      step1output = output_step1$result$result,
-      id = "id"
+      step1output = output_step1$result$result
     )
     # extract error/warning messages (if applicable):
     step2_warning <- ifelse(rlang::is_empty(output_step2$warnings), FALSE, TRUE)
@@ -412,13 +572,23 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   #### Step 3 ####
   # only proceed if there is no error in step 1 as well as step 2
   if (!step1_error && !step2_error) {
+    A_matrix <- create_A(
+      step2output = output_step2$result$result,
+      random_intercept = TRUE
+    )
+    Q_matrix <- create_Q(
+      step2output = output_step2$result$result,
+      random_intercept = TRUE
+    )
+
     output_step3 <- run_step3(
       step2output = output_step2$result$result,
+      A = A_matrix,
+      Q = Q_matrix,
+      mixture = TRUE,
       n_clusters = n_clusters,
       n_starts = 25,
       n_best_starts = 15,
-      maxit = 100,
-      true_clusters = clusterassignment_true,
       verbose = FALSE
     )
     duration <- difftime(Sys.time(), start, unit = "s")
@@ -452,135 +622,41 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     results <- output_step3$result$result
 
     ## adjust potential label switching:
-    new_labels <- results$clustering$modal_assignment |>
-      adjust_labels(true_clusters = clusterassignment_true)
+    new_labels <- adjust_labels(
+      estimated_clusters = results$posterior_probabilities$modal,
+      true_clusters = clusterassignment_true,
+      n_clusters = n_clusters
+    )
     # swap the labels accordingly in the output of step 3:
-    names(results$estimates) <-
-      colnames(results$clustering$posterior_prob) <-
-        names(results$clustering$class_proportions) <-
-          colnames(results$clustering$modal_assignment) <-
-            new_labels
+    rownames(results$estimates) <-
+      rownames(results$standarderrors) <-
+        names(results$model) <-
+          new_labels
+    clusterassignment_estimated <- results$posterior_probabilities$modal |>
+      factor(labels = new_labels) |>
+      as.character() |>
+      factor(levels = levels(clusterassignment_true))
 
-    ## duration and number of non-convergences:
+    ## duration, number of non-convergences, status check:
     output_list[["duration"]] <- duration |>
       as.numeric()
-    output_list[["nonconvergences"]] <- results$other$nonconvergences
+    output_list[["nonconvergences"]] <- results$n_nonconverged
+    output_list[["status_k1"]] <- results$model$cluster1$output$status$code
+    output_list[["status_k2"]] <- results$model$cluster2$output$status$code
+    if (n_clusters == 4) {
+      output_list[["status_k3"]] <- results$model$cluster3$output$status$code
+      output_list[["status_k4"]] <- results$model$cluster4$output$status$code
+    } else {
+      output_list[["status_k3"]] <- NA
+      output_list[["status_k4"]] <- NA
+    }
 
     ## ARI:
-    # turn the modal clustermembership matrix (0s and 1s) into a vector (factor):
-    modal_mat <- results$clustering$modal_assignment
-    clusterassignment_estimated <- colnames(modal_mat)[
-      max.col(modal_mat)
-    ] |>
-      as.factor()
-    # compute ARI
     output_list[["ARI"]] <- mcclust::arandi(
       clusterassignment_true,
       clusterassignment_estimated,
       adjust = TRUE
     )
-
-    ## proxy maximum
-    # adjust labels in proxy solution:
-    proxy_post <- results$proxy$proxy_post
-    proxy_modal <- t(apply(proxy_post, MARGIN = 1, function(x) {
-      ifelse(x == max(x), 1, 0)
-    }))
-    new_labels <- proxy_modal |>
-      adjust_labels(true_clusters = clusterassignment_true)
-    # swap the labels accordingly in the output of step 3:
-    names(results$proxy$proxy_est) <-
-      colnames(results$proxy$proxy_post) <-
-        new_labels
-    output_list[["solution_loglik"]] <- results$other$loglik
-    output_list[["proxy_loglik"]] <- results$other$proxy_maximum
-
-    # differences between proxy and estimated solution, per cluster:
-    diffs_per_cluster <- lapply(
-      paste0("cluster", 1:n_clusters),
-      function(cluster) {
-        diff_post <- abs(
-          results$clustering$posterior_prob[, cluster] -
-            results$proxy$proxy_post[, cluster]
-        )
-        avg_diff_post <- mean(diff_post)
-        max_diff_post <- max(diff_post)
-
-        phi_params <- names(results$estimates[[cluster]])[startsWith(
-          names(results$estimates[[cluster]]),
-          "phi"
-        )]
-        zeta_params <- names(results$estimates[[cluster]])[startsWith(
-          names(results$estimates[[cluster]]),
-          "zeta"
-        )]
-        nuisance_params <- names(results$estimates[[cluster]])[startsWith(
-          names(results$estimates[[cluster]]),
-          "P0"
-        )]
-        diff_phi <- abs(
-          results$estimates[[cluster]][phi_params] -
-            results$proxy$proxy_est[[cluster]][phi_params]
-        )
-        diff_zeta <- abs(
-          results$estimates[[cluster]][zeta_params] -
-            results$proxy$proxy_est[[cluster]][zeta_params]
-        )
-        diff_nuisance <- abs(
-          results$estimates[[cluster]][nuisance_params] -
-            results$proxy$proxy_est[[cluster]][nuisance_params]
-        )
-        avg_diff_phi <- mean(diff_phi)
-        avg_diff_zeta <- mean(diff_zeta)
-        avg_diff_nuisance <- mean(diff_nuisance)
-        max_diff_phi <- max(diff_phi)
-        max_diff_zeta <- max(diff_zeta)
-        max_diff_nuisance <- max(diff_nuisance)
-
-        return(list(
-          avg_diff_post = avg_diff_post,
-          max_diff_post = max_diff_post,
-          avg_diff_phi = avg_diff_phi,
-          avg_diff_zeta = avg_diff_zeta,
-          avg_diff_nuisance = avg_diff_nuisance,
-          max_diff_phi = max_diff_phi,
-          max_diff_zeta = max_diff_zeta,
-          max_diff_nuisance = max_diff_nuisance
-        ))
-      }
-    )
-
-    output_list[["avg_diff_post"]] <- mean(sapply(
-      diffs_per_cluster,
-      function(x) x$avg_diff_post
-    ))
-    output_list[["max_diff_post"]] <- max(sapply(
-      diffs_per_cluster,
-      function(x) x$max_diff_post
-    ))
-    output_list[["avg_diff_phi"]] <- mean(sapply(
-      diffs_per_cluster,
-      function(x) x$avg_diff_phi
-    ))
-    output_list[["avg_diff_zeta"]] <- mean(sapply(
-      diffs_per_cluster,
-      function(x) x$avg_diff_zeta
-    ))
-    output_list[["avg_diff_nuisance"]] <- mean(sapply(
-      diffs_per_cluster,
-      function(x) x$avg_diff_nuisance
-    ))
-    output_list[["max_diff_phi"]] <- max(sapply(diffs_per_cluster, function(x) {
-      x$max_diff_phi
-    }))
-    output_list[["max_diff_zeta"]] <- max(sapply(
-      diffs_per_cluster,
-      function(x) x$max_diff_zeta
-    ))
-    output_list[["max_diff_nuisance"]] <- max(sapply(
-      diffs_per_cluster,
-      function(x) x$max_diff_nuisance
-    ))
 
     ## parameter estimates:
     estimates <- results$estimates
@@ -588,12 +664,12 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     for (k in 1:4) {
       for (i in 1:4) {
         for (j in 1:4) {
-          out_name <- paste0("phi", i, j, "_k", k)
+          out_name <- paste0("phi", i, j, "_k", k, "_est")
           # check if cluster AND factors exist:
           if (k <= n_clusters && i <= n_factors && j <= n_factors) {
             cluster_name <- paste0("cluster", k)
             param_name <- paste0("phi_f", i, "_f", j)
-            output_list[[out_name]] <- estimates[[cluster_name]][[param_name]]
+            output_list[[out_name]] <- estimates[cluster_name, param_name]
           } else {
             output_list[[out_name]] <- NA
           }
@@ -605,13 +681,50 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     for (k in 1:4) {
       for (i in 1:4) {
         for (j in i:4) {
-          # (j in i:4) ensures j >= i (diagonal + lower triangle)
-          out_name <- paste0("zeta", i, j, "_k", k)
+          # (j in i:4) ensures j >= i (diagonal + upper triangle)
+          out_name <- paste0("zeta", i, j, "_k", k, "_est")
           # check if cluster AND factors exist:
           if (k <= n_clusters && i <= n_factors && j <= n_factors) {
             cluster_name <- paste0("cluster", k)
             param_name <- paste0("zeta_f", i, "_f", j)
-            output_list[[out_name]] <- estimates[[cluster_name]][[param_name]]
+            output_list[[out_name]] <- estimates[cluster_name, param_name]
+          } else {
+            output_list[[out_name]] <- NA
+          }
+        }
+      }
+    }
+
+    ## standard errors:
+    standarderrors <- results$standarderrors
+    # phi:
+    for (k in 1:4) {
+      for (i in 1:4) {
+        for (j in 1:4) {
+          out_name <- paste0("phi", i, j, "_k", k, "_se")
+          # check if cluster AND factors exist:
+          if (k <= n_clusters && i <= n_factors && j <= n_factors) {
+            cluster_name <- paste0("cluster", k)
+            param_name <- paste0("phi_f", i, "_f", j)
+            output_list[[out_name]] <- standarderrors[cluster_name, param_name]
+          } else {
+            output_list[[out_name]] <- NA
+          }
+        }
+      }
+    }
+
+    # zeta:
+    for (k in 1:4) {
+      for (i in 1:4) {
+        for (j in i:4) {
+          # (j in i:4) ensures j >= i (diagonal + upper triangle)
+          out_name <- paste0("zeta", i, j, "_k", k, "_se")
+          # check if cluster AND factors exist:
+          if (k <= n_clusters && i <= n_factors && j <= n_factors) {
+            cluster_name <- paste0("cluster", k)
+            param_name <- paste0("zeta_f", i, "_f", j)
+            output_list[[out_name]] <- standarderrors[cluster_name, param_name]
           } else {
             output_list[[out_name]] <- NA
           }
@@ -622,15 +735,20 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     # if step 3 was not successful, set all values to NA
     output_list[["duration"]] <- NA
     output_list[["nonconvergences"]] <- NA
+    output_list[["status_k1"]] <- NA
+    output_list[["status_k2"]] <- NA
+    output_list[["status_k3"]] <- NA
+    output_list[["status_k4"]] <- NA
     output_list[["ARI"]] <- NA
     output_list[["solution_loglik"]] <- NA
     output_list[["proxy_loglik"]] <- NA
 
+    ## estimates:
     # phis:
     for (k in 1:4) {
       for (i in 1:4) {
         for (j in 1:4) {
-          out_name <- paste0("phi", i, j, "_k", k)
+          out_name <- paste0("phi", i, j, "_k", k, "_est")
           output_list[[out_name]] <- NA
         }
       }
@@ -640,8 +758,30 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     for (k in 1:4) {
       for (i in 1:4) {
         for (j in i:4) {
-          # ensures j >= i (diagonal + lower triangle)
-          out_name <- paste0("zeta", i, j, "_k", k)
+          # ensures j >= i (diagonal + upper triangle)
+          out_name <- paste0("zeta", i, j, "_k", k, "_est")
+          output_list[[out_name]] <- NA
+        }
+      }
+    }
+
+    ## standard errors:
+    # phis:
+    for (k in 1:4) {
+      for (i in 1:4) {
+        for (j in 1:4) {
+          out_name <- paste0("phi", i, j, "_k", k, "_se")
+          output_list[[out_name]] <- NA
+        }
+      }
+    }
+
+    # zetas:
+    for (k in 1:4) {
+      for (i in 1:4) {
+        for (j in i:4) {
+          # ensures j >= i (diagonal + upper triangle)
+          out_name <- paste0("zeta", i, j, "_k", k, "_se")
           output_list[[out_name]] <- NA
         }
       }
@@ -666,11 +806,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   for (x in warnings_errors) {
     output_list[[x]] <- get(x)
   }
-
-  # reset the OpenMx parameters:
-  mxOption(key = "Major Iterations", reset = TRUE)
-  mxOption(key = "Calculate Hessian", reset = TRUE)
-  mxOption(key = "Standard Errors", reset = TRUE)
 
   # remove all whitespace, linebreaks, and commata from error and warning strings
   text_elements <- grep("_text$", names(output_list), value = TRUE)

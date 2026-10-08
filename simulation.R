@@ -3,6 +3,7 @@
 #### load packages and functions ####
 library(conflicted)
 library(dplyr)
+library(ezLVAR)
 library(flock)
 library(lavaan)
 library(MASS)
@@ -19,9 +20,6 @@ library(parabar)
 library(parallel)
 
 # load functions
-source("step1.R")
-source("step2.R")
-source("step3.R")
 source("do_sim.R")
 source("auxiliary_functions.R")
 
@@ -53,21 +51,18 @@ backend <- start_backend(
 parabar::evaluate(backend, {
   library(conflicted)
   library(dplyr)
+  library(ezLVAR)
   library(flock)
   library(lavaan)
   library(MASS)
   library(mcclust)
   library(OpenMx)
-  library(EasyMx)
   library(purrr)
   library(tidyr)
   library(truncnorm)
   library(RcppAlgos)
   library(stringr)
 
-  source("step1.R")
-  source("step2.R")
-  source("step3.R")
   source("do_sim.R")
   source("auxiliary_functions.R")
 })
