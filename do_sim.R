@@ -28,14 +28,14 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     phimat_k1_pop <- matrix(c(0.3, 0.2, 0.2, 0.3), ncol = 2, byrow = TRUE)
 
     # Cluster 2: antagonistic
-    phimat_k2_pop <- matrix(c(0.1, -0.2, -0.1, -0.1), ncol = 2, byrow = TRUE)
+    phimat_k2_pop <- matrix(c(0.6, 0.1, 0.1, 0.6), ncol = 2, byrow = TRUE)
 
     if (n_clusters == 4) {
       # Cluster 3: mixed
       phimat_k3_pop <- matrix(c(0.3, -0.3, 0.1, 0.9), ncol = 2, byrow = TRUE)
 
       # Cluster 4: unconnected
-      phimat_k4_pop <- matrix(c(0.6, 0.1, 0.1, 0.6), ncol = 2, byrow = TRUE)
+      phimat_k4_pop <- matrix(c(0.1, -0.2, -0.1, -0.1), ncol = 2, byrow = TRUE)
     } else {
       # create matrices with NA if there's only two clusters:
       phimat_k3_pop <- phimat_k4_pop <- matrix(NA, nrow = 2, ncol = 2)
@@ -71,22 +71,22 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     # Cluster 2: antagonistic
     phimat_k2_pop <- matrix(
       c(
+        0.6,
         0.1,
-        -0.2,
-        -0.1,
-        0.2,
-        -0.1,
-        -0.1,
-        -0.1,
-        -0.1,
-        -0.2,
-        -0.1,
-        0.2,
-        -0.1,
-        -0.1,
-        -0.2,
-        -0.1,
-        0.1
+        0,
+        0,
+        0.1,
+        0.6,
+        0.1,
+        0.1,
+        0,
+        0.1,
+        0.6,
+        0.1,
+        0.1,
+        0,
+        0,
+        0.6
       ),
       ncol = 4,
       byrow = TRUE
@@ -120,22 +120,22 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       # Cluster 4: unconnected
       phimat_k4_pop <- matrix(
         c(
-          0.6,
           0.1,
-          0,
-          0,
-          0.1,
-          0.6,
-          0.1,
-          0.1,
-          0,
-          0.1,
-          0.6,
-          0.1,
-          0.1,
-          0,
-          0,
-          0.6
+          -0.2,
+          -0.1,
+          0.2,
+          -0.1,
+          -0.1,
+          -0.1,
+          -0.1,
+          -0.2,
+          -0.1,
+          0.2,
+          -0.1,
+          -0.1,
+          -0.2,
+          -0.1,
+          0.1
         ),
         ncol = 4,
         byrow = TRUE
