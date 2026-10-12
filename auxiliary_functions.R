@@ -47,36 +47,27 @@ sim_VAR <- function(factors, obs, phi, zeta, mu, burn_in = 0) {
 }
 
 #### adjust_labels() ####
-adjust_labels <- function(estimated_clusters, true_clusters, n_clusters) {
+adjust_labels <- function(estimated_clusters, true_clusters) {
+  # turn estimated_clusters into factor with levels equal to true_clusters
   estimated_clusters <- factor(
     estimated_clusters,
     levels = levels(true_clusters)
   )
-  # create matrix with all permutations of labels
-  combinations <- levels(true_clusters) |>
-    RcppAlgos::permuteGeneral() |>
-    as.data.frame()
-  combinations$diagsum <- 0
+  # create contingency table
+  crosstable <- table(estimated_clusters, true_clusters)
 
-  for (i in seq_len(nrow(combinations))) {
-    temp <- estimated_clusters |>
-      factor(labels = combinations[i, 1:n_clusters]) |>
-      # turn the factor into a character vector and then back into a factor with
-      # the same levels as true_clusters:
-      as.character() |>
-      factor(levels = levels(true_clusters))
+  # solve the linear sum assignment problem to find the best matching between
+  # estimated and true clusters
+  assignment <- clue::solve_LSAP(crosstable, maximum = TRUE)
 
-    # creates a cross table of estimated and true cluster assignments:
-    crosstable <- table(temp, true_clusters)
-    # compute the sum of the diagonal of the cross table and save it
-    combinations$diagsum[i] <- sum(diag(crosstable))
-  }
-  # choose the permutation with the largest sum of the diagonal:
-  max_diagsum <- which.max(combinations$diagsum)
-  new_labels <- combinations[max_diagsum, 1:n_clusters] |>
-    as.character()
+  # create a mapping of old estimated cluster labels to new labels based on the
+  # assignment
+  mapping <- setNames(
+    colnames(crosstable)[as.integer(assignment)],
+    rownames(crosstable)
+  )
 
-  return(new_labels)
+  return(mapping)
 }
 
 #### safely/quietly functions ####
