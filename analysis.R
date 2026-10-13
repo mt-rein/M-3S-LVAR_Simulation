@@ -97,6 +97,7 @@ get_performance <- function(
 results <- read_csv("output_sim.csv") |>
   arrange(iteration)
 
+# remove SEs greater than 1
 results <- results |>
   filter(if_all(matches("^phi\\d{1,2}_k\\d{1}_se$"), ~ is.na(.x) | .x <= 1))
 

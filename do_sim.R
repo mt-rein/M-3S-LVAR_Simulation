@@ -25,17 +25,17 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   # if two factors:
   if (n_factors == 2) {
     # Cluster 1: interconnected
-    phimat_k1_pop <- matrix(c(0.3, 0.2, 0.2, 0.3), ncol = 2, byrow = TRUE)
+    phimat_k1_pop <- matrix(c(0.7, 0.0, 0.0, 0.7), ncol = 2, byrow = TRUE)
 
     # Cluster 2: antagonistic
-    phimat_k2_pop <- matrix(c(0.6, 0.1, 0.1, 0.6), ncol = 2, byrow = TRUE)
+    phimat_k2_pop <- matrix(c(0.3, 0.3, 0.3, 0.3), ncol = 2, byrow = TRUE)
 
     if (n_clusters == 4) {
       # Cluster 3: mixed
-      phimat_k3_pop <- matrix(c(0.3, -0.3, 0.1, 0.9), ncol = 2, byrow = TRUE)
+      phimat_k3_pop <- matrix(c(0.6, -0.3, 0.2, 0.1), ncol = 2, byrow = TRUE)
 
       # Cluster 4: unconnected
-      phimat_k4_pop <- matrix(c(0.1, -0.2, -0.1, -0.1), ncol = 2, byrow = TRUE)
+      phimat_k4_pop <- matrix(c(0.3, -0.2, -0.2, 0.3), ncol = 2, byrow = TRUE)
     } else {
       # create matrices with NA if there's only two clusters:
       phimat_k3_pop <- phimat_k4_pop <- matrix(NA, nrow = 2, ncol = 2)
@@ -47,22 +47,22 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     # Cluster 1: interconnected
     phimat_k1_pop <- matrix(
       c(
-        0.3,
-        0.2,
-        0.2,
-        0.2,
-        0.2,
-        0.4,
-        0.2,
-        0.2,
-        0.2,
-        0.2,
-        0.3,
-        0.2,
-        0.2,
-        0.2,
-        0.2,
-        0.4
+        0.68,
+        0.00,
+        0.00,
+        0.00,
+        0.00,
+        0.68,
+        0.00,
+        0.00,
+        0.00,
+        0.00,
+        0.68,
+        0.00,
+        0.00,
+        0.00,
+        0.00,
+        0.68
       ),
       ncol = 4,
       byrow = TRUE
@@ -71,22 +71,22 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     # Cluster 2: antagonistic
     phimat_k2_pop <- matrix(
       c(
-        0.6,
-        0.1,
-        0,
-        0,
-        0.1,
-        0.6,
-        0.1,
-        0.1,
-        0,
-        0.1,
-        0.6,
-        0.1,
-        0.1,
-        0,
-        0,
-        0.6
+        0.28,
+        0.25,
+        0.20,
+        0.18,
+        0.25,
+        0.28,
+        0.18,
+        0.20,
+        0.20,
+        0.18,
+        0.28,
+        0.25,
+        0.18,
+        0.20,
+        0.25,
+        0.28
       ),
       ncol = 4,
       byrow = TRUE
@@ -96,22 +96,22 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       # Cluster 3: mixed
       phimat_k3_pop <- matrix(
         c(
-          0.3,
-          -0.3,
-          0.2,
-          -0.2,
-          0.1,
-          0.9,
-          -0.3,
-          0,
-          0.2,
-          -0.2,
-          0.4,
-          0.2,
-          -0.3,
-          0.1,
-          0.2,
-          0.7
+          0.60,
+          -0.25,
+          0.18,
+          0.05,
+          0.18,
+          0.12,
+          -0.15,
+          0.22,
+          -0.10,
+          0.22,
+          0.48,
+          -0.18,
+          0.12,
+          -0.05,
+          0.08,
+          0.22
         ),
         ncol = 4,
         byrow = TRUE
@@ -120,22 +120,22 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       # Cluster 4: unconnected
       phimat_k4_pop <- matrix(
         c(
-          0.1,
-          -0.2,
-          -0.1,
-          0.2,
-          -0.1,
-          -0.1,
-          -0.1,
-          -0.1,
-          -0.2,
-          -0.1,
-          0.2,
-          -0.1,
-          -0.1,
-          -0.2,
-          -0.1,
-          0.1
+          0.30,
+          -0.12,
+          -0.08,
+          0.00,
+          -0.12,
+          0.30,
+          0.00,
+          -0.08,
+          -0.08,
+          0.00,
+          0.30,
+          -0.12,
+          0.00,
+          -0.08,
+          -0.12,
+          0.30
         ),
         ncol = 4,
         byrow = TRUE
@@ -150,7 +150,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   # if two factors:
   if (n_factors == 2) {
     zetamat_k1_pop <- zetamat_k2_pop <- matrix(
-      c(292, -104, -104, 46),
+      c(1.5, .5, .5, 1.5),
       ncol = 2,
       byrow = TRUE
     )
@@ -166,30 +166,13 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   # if four factors:
   if (n_factors == 4) {
     zetamat_k1_pop <- zetamat_k2_pop <- matrix(
-      c(
-        293,
-        -103,
-        47,
-        -22,
-        -103,
-        157,
-        -27,
-        19,
-        47,
-        -27,
-        163,
-        -7,
-        -22,
-        19,
-        -7,
-        47
-      ),
+      c(1.5, .5, .5, .5, .5, 1.5, .5, .5, .5, .5, 1.5, .5, .5, .5, .5, 1.5),
       ncol = 4,
       byrow = TRUE
     )
 
     if (n_clusters == 4) {
-      zetamat_k3_pop <- zetamat_k3_pop <- zetamat_k1_pop
+      zetamat_k3_pop <- zetamat_k4_pop <- zetamat_k1_pop
     } else {
       # create matrices with NA if there's only two clusters:
       zetamat_k3_pop <- zetamat_k4_pop <- matrix(NA, nrow = 4, ncol = 4)
@@ -198,25 +181,20 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
 
   ## grand means
   if (n_factors == 2) {
-    grandmeans <- rep(0, 2)
+    grandmeans <- c(5, 3)
   } else {
-    grandmeans <- rep(0, 4)
+    grandmeans <- c(5, 3, 6, 2)
   }
-  mu_variance <- matrix(-15, nrow = n_factors, ncol = n_factors)
-  if (n_factors == 2) {
-    diag(mu_variance) <- c(60, 60)
-  }
-  if (n_factors == 4) {
-    diag(mu_variance) <- c(60, 60, 60, 60)
-  }
+  mu_variance <- matrix(.3, nrow = n_factors, ncol = n_factors)
+  diag(mu_variance) <- 1
 
   ## measurement model parameters
   # loadings:
-  lambda_f1_pop <- c(1, 0.9, 0.6, 0.7)
-  lambda_f2_pop <- c(1, 1.5, 1.4, 1.6)
+  lambda_f1_pop <- rep(.8, 4)
+  lambda_f2_pop <- rep(.8, 4)
   if (n_factors == 4) {
-    lambda_f3_pop <- c(1, 0.8, 0.5, 0.9)
-    lambda_f4_pop <- c(1, 1.2, 1.3, 1.5)
+    lambda_f3_pop <- rep(.8, 4)
+    lambda_f4_pop <- rep(.8, 4)
   } else {
     lambda_f3_pop <- lambda_f4_pop <- rep(NA, 4)
   }
@@ -239,11 +217,11 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   }
 
   # residual variances:
-  theta_f1_pop <- c(67, 195, 428, 351)
-  theta_f2_pop <- c(449, 204, 304, 369)
+  theta_f1_pop <- rep(.36, 4)
+  theta_f2_pop <- rep(.36, 4)
   if (n_factors == 4) {
-    theta_f3_pop <- c(85, 187, 303, 330)
-    theta_f4_pop <- c(361, 201, 304, 351)
+    theta_f3_pop <- rep(.36, 4)
+    theta_f4_pop <- rep(.36, 4)
   } else {
     theta_f3_pop <- theta_f4_pop <- rep(NA, 4)
   }
@@ -261,11 +239,11 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   }
 
   # intercepts:
-  tau_f1_pop <- c(55, 53, 57, 59)
-  tau_f2_pop <- c(25, 19, 22, 31)
+  tau_f1_pop <- rep(1, 4)
+  tau_f2_pop <- rep(1, 4)
   if (n_factors == 4) {
-    tau_f3_pop <- c(43, 41, 45, 47)
-    tau_f4_pop <- c(15, 9, 12, 21)
+    tau_f3_pop <- rep(1, 4)
+    tau_f4_pop <- rep(1, 4)
   } else {
     tau_f3_pop <- tau_f4_pop <- rep(NA, 4)
   }
@@ -431,26 +409,26 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   if (n_factors == 2) {
     model_step1 <- list(
       "
-      f1 =~ f1_v1 + f1_v2 + f1_v3 + f1_v4
+      f1 =~ 0.8*f1_v1 + f1_v2 + f1_v3 + f1_v4
       ",
       "
-      f2 =~ f2_v1 + f2_v2 + f2_v3 + f2_v4
+      f2 =~ 0.8*f2_v1 + f2_v2 + f2_v3 + f2_v4
       "
     )
   }
   if (n_factors == 4) {
     model_step1 <- list(
       "
-      f1 =~ f1_v1 + f1_v2 + f1_v3 + f1_v4
+      f1 =~ 0.8*f1_v1 + f1_v2 + f1_v3 + f1_v4
       ",
       "
-      f2 =~ f2_v1 + f2_v2 + f2_v3 + f2_v4
+      f2 =~ 0.8*f2_v1 + f2_v2 + f2_v3 + f2_v4
       ",
       "
-      f3 =~ f3_v1 + f3_v2 + f3_v3 + f3_v4
+      f3 =~ 0.8*f3_v1 + f3_v2 + f3_v3 + f3_v4
       ",
       "
-      f4 =~ f4_v1 + f4_v2 + f4_v3 + f4_v4
+      f4 =~ 0.8*f4_v1 + f4_v2 + f4_v3 + f4_v4
       "
     )
   }
@@ -542,6 +520,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       }
     }
 
+    ## perform step 2:
     output_step2 <- run_step2(
       step1output = output_step1$result$result
     )
@@ -563,6 +542,29 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       ""
     )
   } else {
+    # set MM estimates to NA:
+    # loadings:
+    for (f in 1:4) {
+      for (v in 1:4) {
+        out_name <- paste0("lambda_f", f, "_v", v, "_est")
+        output_list[[out_name]] <- NA
+      }
+    }
+    # residual variances:
+    for (f in 1:4) {
+      for (v in 1:4) {
+        out_name <- paste0("theta_f", f, "_v", v, "_est")
+        output_list[[out_name]] <- NA
+      }
+    }
+    # intercepts:
+    for (f in 1:4) {
+      for (v in 1:4) {
+        out_name <- paste0("tau_f", f, "_v", v, "_est")
+        output_list[[out_name]] <- NA
+      }
+    }
+
     step2_warning <- FALSE
     step2_warning_text <- "step1 not successful"
     step2_error <- FALSE
@@ -581,10 +583,19 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       random_intercept = TRUE
     )
 
+    startval_P0 <- matrix(10, nrow = n_factors, ncol = n_factors)
+    diag(startval_P0) <- 100
+    P0_matrix <- create_P0(
+      step2output = output_step2$result$result,
+      startvalues = startval_P0,
+      random_intercept = TRUE
+    )
+
     output_step3 <- run_step3(
       step2output = output_step2$result$result,
       A = A_matrix,
       Q = Q_matrix,
+      P0 = P0_matrix,
       mixture = TRUE,
       n_clusters = n_clusters,
       n_starts = 25,
@@ -609,6 +620,33 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       paste(c(output_step3$result$error), collapse = "; "),
       ""
     )
+
+    ## check and save the status codes, create an error if one is unequal to 0:
+    if (!step3_error) {
+      codes <- output_step3$result$result$status_code
+      output_list[["status_k1"]] <- codes[1]
+      output_list[["status_k2"]] <- codes[2]
+      if (n_clusters == 4) {
+        output_list[["status_k3"]] <- codes[3]
+        output_list[["status_k4"]] <- codes[4]
+      } else {
+        output_list[["status_k3"]] <- NA
+        output_list[["status_k4"]] <- NA
+      }
+
+      if (any(codes != 0)) {
+        step3_error <- TRUE
+        step3_error_text <- paste(
+          "Non-zero status code for at least one cluster. Status codes:",
+          paste(codes, collapse = ", ")
+        )
+      }
+    } else {
+      output_list[["status_k1"]] <- NA
+      output_list[["status_k2"]] <- NA
+      output_list[["status_k3"]] <- NA
+      output_list[["status_k4"]] <- NA
+    }
   } else {
     step3_warning <- FALSE
     step3_warning_text <- "step1 or step2 not successful"
@@ -622,34 +660,25 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     results <- output_step3$result$result
 
     ## adjust potential label switching:
-    new_labels <- adjust_labels(
+    mapping <- adjust_labels(
       estimated_clusters = results$posterior_probabilities$modal,
-      true_clusters = clusterassignment_true,
-      n_clusters = n_clusters
+      true_clusters = clusterassignment_true
     )
     # swap the labels accordingly in the output of step 3:
     rownames(results$estimates) <-
       rownames(results$standarderrors) <-
         names(results$model) <-
-          new_labels
-    clusterassignment_estimated <- results$posterior_probabilities$modal |>
-      factor(labels = new_labels) |>
-      as.character() |>
+          unname(mapping)
+    clusterassignment_estimated <- mapping[
+      results$posterior_probabilities$modal
+    ] |>
+      unname() |>
       factor(levels = levels(clusterassignment_true))
 
     ## duration, number of non-convergences, status check:
     output_list[["duration"]] <- duration |>
       as.numeric()
     output_list[["nonconvergences"]] <- results$n_nonconverged
-    output_list[["status_k1"]] <- results$model$cluster1$output$status$code
-    output_list[["status_k2"]] <- results$model$cluster2$output$status$code
-    if (n_clusters == 4) {
-      output_list[["status_k3"]] <- results$model$cluster3$output$status$code
-      output_list[["status_k4"]] <- results$model$cluster4$output$status$code
-    } else {
-      output_list[["status_k3"]] <- NA
-      output_list[["status_k4"]] <- NA
-    }
 
     ## ARI:
     output_list[["ARI"]] <- mcclust::arandi(
@@ -735,13 +764,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     # if step 3 was not successful, set all values to NA
     output_list[["duration"]] <- NA
     output_list[["nonconvergences"]] <- NA
-    output_list[["status_k1"]] <- NA
-    output_list[["status_k2"]] <- NA
-    output_list[["status_k3"]] <- NA
-    output_list[["status_k4"]] <- NA
     output_list[["ARI"]] <- NA
-    output_list[["solution_loglik"]] <- NA
-    output_list[["proxy_loglik"]] <- NA
 
     ## estimates:
     # phis:
@@ -821,6 +844,11 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   #### write output file ####
   output_vector <- unlist(output_list, use.names = TRUE)
 
+  # lock the file to prevent multiple processes accessing it simultaneously
+  lock <- flock::lock("simulation_lock")
+  # unlock the file upon exiting the function, even if an error occurs
+  on.exit(flock::unlock(lock), add = TRUE)
+
   # check if file exists
   if (!file.exists(outputfile)) {
     # if file does not yet exist
@@ -834,8 +862,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       col.names = TRUE
     )
   } else {
-    # lock the file to prevent multiple processes accessing it simultaneously
-    lock <- flock::lock(outputfile)
+    # if file already exists, append to it:
     write.table(
       t(output_vector),
       file = outputfile,
@@ -845,8 +872,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       row.names = FALSE,
       col.names = FALSE
     )
-    # unlock the file
-    flock::unlock(lock)
   }
 
   if (verbose == TRUE) {
@@ -854,4 +879,45 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   }
 
   return(output_vector)
+}
+
+#### wrapper function around do_sim() to catch errors and warnings ####
+run_one_sim <- function(pos, cond, outputfile, errorfile, verbose = FALSE) {
+  tryCatch(
+    {
+      do_sim(
+        pos,
+        cond = cond,
+        outputfile = outputfile,
+        verbose = verbose
+      )
+
+      list(
+        success = TRUE,
+        iteration = cond$iteration[pos]
+      )
+    },
+    error = function(e) {
+      error_row <- cond[pos, , drop = FALSE]
+      error_row$error_message <- conditionMessage(e)
+
+      lock <- flock::lock("error_lock")
+      on.exit(flock::unlock(lock), add = TRUE)
+
+      write.table(
+        error_row,
+        file = errorfile,
+        sep = ",",
+        row.names = FALSE,
+        col.names = FALSE,
+        append = TRUE
+      )
+
+      list(
+        success = FALSE,
+        iteration = cond$iteration[pos],
+        error = conditionMessage(e)
+      )
+    }
+  )
 }

@@ -36,6 +36,7 @@ set.seed(123)
 cond$seed <- sample(1:(nrow(cond) * 5), size = nrow(cond), replace = FALSE)
 # add iteration number:
 cond$iteration <- 1:nrow(cond) # (unique) number of each iteration
+cond <- cond %>% relocate(iteration) # move iteration column to beginning
 
 #### set up parallel computing ####
 ## open cluster
@@ -70,14 +71,26 @@ parabar::evaluate(backend, {
 ## load objects in cluster
 export(backend, "cond")
 
+#### prepare error file ####
+error_template <- cond[0, ]
+error_template$error_message <- character()
+write.table(
+  error_template,
+  file = "error_sim.csv",
+  sep = ",",
+  row.names = FALSE,
+  col.names = TRUE
+)
+
 #### perform simulation ####
 start <- Sys.time()
 output <- par_lapply(
   backend,
   1:nrow(cond),
-  do_sim,
+  run_one_sim,
   cond = cond,
   outputfile = "output_sim.csv",
+  errorfile = "error_sim.csv",
   verbose = FALSE
 )
 end <- Sys.time()
