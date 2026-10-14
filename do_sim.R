@@ -620,33 +620,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       paste(c(output_step3$result$error), collapse = "; "),
       ""
     )
-
-    ## check and save the status codes, create an error if one is unequal to 0:
-    if (!step3_error) {
-      codes <- output_step3$result$result$status_code
-      output_list[["status_k1"]] <- codes[1]
-      output_list[["status_k2"]] <- codes[2]
-      if (n_clusters == 4) {
-        output_list[["status_k3"]] <- codes[3]
-        output_list[["status_k4"]] <- codes[4]
-      } else {
-        output_list[["status_k3"]] <- NA
-        output_list[["status_k4"]] <- NA
-      }
-
-      if (any(codes != 0)) {
-        step3_error <- TRUE
-        step3_error_text <- paste(
-          "Non-zero status code for at least one cluster. Status codes:",
-          paste(codes, collapse = ", ")
-        )
-      }
-    } else {
-      output_list[["status_k1"]] <- NA
-      output_list[["status_k2"]] <- NA
-      output_list[["status_k3"]] <- NA
-      output_list[["status_k4"]] <- NA
-    }
   } else {
     step3_warning <- FALSE
     step3_warning_text <- "step1 or step2 not successful"
@@ -686,6 +659,18 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       clusterassignment_estimated,
       adjust = TRUE
     )
+
+    ## status codes:
+    codes <- output_step3$result$result$status_code
+    output_list[["status_k1"]] <- codes[1]
+    output_list[["status_k2"]] <- codes[2]
+    if (n_clusters == 4) {
+      output_list[["status_k3"]] <- codes[3]
+      output_list[["status_k4"]] <- codes[4]
+    } else {
+      output_list[["status_k3"]] <- NA
+      output_list[["status_k4"]] <- NA
+    }
 
     ## parameter estimates:
     estimates <- results$estimates
@@ -765,6 +750,10 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     output_list[["duration"]] <- NA
     output_list[["nonconvergences"]] <- NA
     output_list[["ARI"]] <- NA
+    output_list[["status_k1"]] <- NA
+    output_list[["status_k2"]] <- NA
+    output_list[["status_k3"]] <- NA
+    output_list[["status_k4"]] <- NA
 
     ## estimates:
     # phis:
