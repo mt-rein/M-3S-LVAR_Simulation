@@ -3,6 +3,7 @@
 #### load packages and functions ####
 library(conflicted)
 library(dplyr)
+library(ezLVAR)
 library(flock)
 library(lavaan)
 library(MASS)
@@ -19,9 +20,6 @@ library(parabar)
 library(parallel)
 
 # load functions
-source("step1.R")
-source("step2.R")
-source("step3.R")
 source("do_sim.R")
 source("auxiliary_functions.R")
 
@@ -38,6 +36,7 @@ set.seed(123)
 cond$seed <- sample(1:(nrow(cond) * 5), size = nrow(cond), replace = FALSE)
 # add iteration number:
 cond$iteration <- 1:nrow(cond) # (unique) number of each iteration
+cond <- cond %>% relocate(iteration) # move iteration column to beginning
 
 #### set up parallel computing ####
 ## open cluster
@@ -53,21 +52,18 @@ backend <- start_backend(
 parabar::evaluate(backend, {
   library(conflicted)
   library(dplyr)
+  library(ezLVAR)
   library(flock)
   library(lavaan)
   library(MASS)
   library(mcclust)
   library(OpenMx)
-  library(EasyMx)
   library(purrr)
   library(tidyr)
   library(truncnorm)
   library(RcppAlgos)
   library(stringr)
 
-  source("step1.R")
-  source("step2.R")
-  source("step3.R")
   source("do_sim.R")
   source("auxiliary_functions.R")
 })
@@ -75,14 +71,26 @@ parabar::evaluate(backend, {
 ## load objects in cluster
 export(backend, "cond")
 
+#### prepare error file ####
+error_template <- cond[0, ]
+error_template$error_message <- character()
+write.table(
+  error_template,
+  file = "error_sim.csv",
+  sep = ",",
+  row.names = FALSE,
+  col.names = TRUE
+)
+
 #### perform simulation ####
 start <- Sys.time()
 output <- par_lapply(
   backend,
   1:nrow(cond),
-  do_sim,
+  run_one_sim,
   cond = cond,
   outputfile = "output_sim.csv",
+  errorfile = "error_sim.csv",
   verbose = FALSE
 )
 end <- Sys.time()

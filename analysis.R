@@ -3,72 +3,79 @@ library(tidyverse)
 #### analysis helper functions ####
 get_performance <- function(
   results,
-  aspect_var = NULL,
-  param_regex = "(phi|zeta)",
-  grouping_regex = "k\\d{1}",
-  stat_regex = "(est|pop)"
+  aspect_var = NULL
 ) {
+  # custom regex for this simulation study (indicates structure of the variable
+  # names in the results data frame)
   custom_regex <- paste0(
     "^",
-    param_regex,
+    "(phi|zeta)",
     "\\d{1,2}_",
-    grouping_regex,
+    "k\\d{1}",
     "_",
-    stat_regex
+    "(est|pop|se)"
   )
 
-  ## compute bias
-  bias <- results |>
-    # bring results in wide format: 1 row per parameter (e.g., phi11), group,
-    # and stat (est(imate) or pop(ulation) value)
+  ## reorganize results data frame
+  long_results <- results |>
+    # bring results in long format: 1 row per parameter (e.g., phi11), group,
+    # and stat (est(imate), pop(ulation) value, or se(standard error))
     pivot_longer(
       cols = matches(custom_regex),
       names_to = c("parameter", "cluster", "stat"),
       names_sep = "_"
     ) |>
-    # and then back into wide format with est and pop in different columns
+    # and then back into wide format with est, pop, and se in different columns
     pivot_wider(names_from = stat, values_from = value) |>
-    mutate(
-      # compute bias
-      difference = est - pop,
-      # classify as either AR or CR:
-      ij = str_extract(parameter, "(?<=phi)\\d{2}"),
-      i = as.integer(str_sub(ij, 1, 1)),
-      j = as.integer(str_sub(ij, 2, 2)),
-      phi_type = if_else(i == j, "AR", "CR")
+    mutate(param_id = paste(parameter, cluster, sep = "_"))
+
+  # compute bias per parameter (grouped by aspect_var)
+  bias <- long_results |>
+    filter(!is.na(est), !is.na(pop)) |>
+    mutate(difference = est - pop) |>
+    group_by(across(all_of(aspect_var)), param_id) |>
+    summarize(
+      bias = mean(difference, na.rm = TRUE),
+      .groups = "drop"
     ) |>
-    # only keep phi (not interested in zeta)
-    filter(phi_type %in% c("AR", "CR")) |>
-    # compute bias per parameter (grouped by aspect_var)
-    group_by(across(all_of(aspect_var)), parameter, cluster, phi_type) |>
-    summarize(AB = mean(difference, na.rm = TRUE), .groups = "drop") |>
-    group_by(across(all_of(aspect_var)), phi_type) |>
-    summarize(mean_bias = mean(AB, na.rm = TRUE), .groups = "drop") |>
     pivot_wider(
-      names_from = phi_type,
-      names_prefix = "meanbias_",
-      values_from = mean_bias
+      names_from = param_id,
+      values_from = bias,
+      names_prefix = "bias_"
     )
 
-  ## compute ARI, local max percentage, computation time
+  # compute SE recovery per parameter (grouped by aspect_var)
+  se_recovery <- long_results |>
+    filter(!is.na(est), !is.na(se)) |>
+    group_by(across(all_of(aspect_var)), param_id) |>
+    summarize(
+      SE_recovery = mean(se, na.rm = TRUE) / sd(est, na.rm = TRUE),
+      .groups = "drop"
+    ) |>
+    pivot_wider(
+      names_from = param_id,
+      values_from = SE_recovery,
+      names_prefix = "SErec_"
+    )
+
+  ## compute ARI, convergence rate, and computation time
   outcomes <- results |>
     mutate(
-      convergence_rate = (15 - nonconvergences) / 15,
-      local_max = (proxy_loglik - solution_loglik) > .001
+      convergence_rate = (15 - nonconvergences) / 15
     ) |>
     group_by(across(all_of(aspect_var))) |>
     summarize(
       mean_ARI = mean(ARI, na.rm = TRUE),
       mean_convrate = mean(convergence_rate, na.rm = TRUE),
-      pct_localmax = mean(local_max, na.rm = TRUE),
       mean_comptime = mean(duration / 3600, na.rm = TRUE)
     )
 
   ## combine
   if (is.null(aspect_var)) {
-    outcomes <- bind_cols(bias, outcomes)
+    outcomes <- bind_cols(bias, se_recovery, outcomes)
   } else {
     outcomes <- bias |>
+      full_join(se_recovery, by = aspect_var) |>
       full_join(outcomes, by = aspect_var)
   }
 
@@ -86,62 +93,28 @@ get_performance <- function(
   return(outcomes)
 }
 
-comparison_proxy <- function(results, aspect_var = NULL) {
-  output <- results |>
-    mutate(diff = proxy_loglik - solution_loglik) |>
-    group_by(across(all_of(aspect_var))) |>
-    summarize(
-      mean_diff = mean(diff, na.rm = TRUE),
-      max_diff = max(diff, na.rm = TRUE),
-      mean_avg_diff_post = mean(avg_diff_post, na.rm = TRUE),
-      mean_max_diff_post = mean(max_diff_post, na.rm = TRUE),
-      mean_avg_diff_phi = mean(avg_diff_phi, na.rm = TRUE),
-      mean_avg_diff_zeta = mean(avg_diff_zeta, na.rm = TRUE),
-      mean_avg_diff_nuisance = mean(avg_diff_nuisance, na.rm = TRUE),
-      mean_max_diff_phi = mean(max_diff_phi, na.rm = TRUE),
-      mean_max_diff_zeta = mean(max_diff_zeta, na.rm = TRUE),
-      mean_max_diff_nuisance = mean(max_diff_nuisance, na.rm = TRUE)
-    )
-
-  # add "aspect" and "level" columns
-  if (is.null(aspect_var)) {
-    output <- output |>
-      mutate(aspect = "overall", level = NA_character_, .before = everything())
-  } else {
-    output <- output |>
-      rename(level = !!aspect_var) |>
-      mutate(aspect = aspect_var, .before = level) |>
-      mutate(level = as.character(level))
-  }
-
-  return(output)
-}
-
-
 # read data and sort by iteration
 results <- read_csv("output_sim.csv") |>
   arrange(iteration)
-
-# rename estimate columns (add _est suffix):
-est_cols <- names(results)[
-  str_detect(names(results), "^(phi|zeta)\\d{1,2}_k\\d{1}$")
-]
-names(est_cols) <- paste0(est_cols, "_est")
-results <- results |>
-  rename(all_of(est_cols))
-
 
 # names of the condition columns
 cond_cols <- c("n_obs", "n_clusters", "n_factors")
 
 #### errors, warnings, non converged starts ####
+# display number of warnings and errors in each step
 results |>
-  summarize(across(step1_warning:step3_error, ~ sum()))
-# no warnings or errors
+  summarize(across(step1_warning:step3_error, ~ sum(.x)))
+# 60 warnings/errors in step3
+unique(results$step3_warning_text)
+unique(results$step3_error_text)
+# --> warnings and errors refer to non-zero status codes
 
+# display number of non-converged starts
 results$nonconvergences |> table()
 
-# maximum of 6 non-convergences
+# remove SEs greater than 1
+results <- results |>
+  filter(if_all(matches("^phi\\d{1,2}_k\\d{1}_se$"), ~ is.na(.x) | .x <= 1))
 
 #### duration in hours (detailed in unique conditions) ####
 mean(results$duration / 3600)
@@ -160,13 +133,6 @@ performance <- map(
   ~ get_performance(results, aspect_var = .x)
 ) |>
   list_rbind()
-print(performance, width = Inf)
-
-#### inspect differences between empirical and proxy solution ####
-comparison <- map(
-  c(list(NULL), as.list(cond_cols)),
-  ~ comparison_proxy(results, aspect_var = .x)
-) |>
-  list_rbind()
-
-print(comparison, width = Inf)
+performance |>
+  mutate(across(where(is.numeric), ~ round(.x, 2))) |>
+  print(width = Inf)
