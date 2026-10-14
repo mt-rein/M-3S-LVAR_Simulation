@@ -97,21 +97,24 @@ get_performance <- function(
 results <- read_csv("output_sim.csv") |>
   arrange(iteration)
 
-# remove SEs greater than 1
-results <- results |>
-  filter(if_all(matches("^phi\\d{1,2}_k\\d{1}_se$"), ~ is.na(.x) | .x <= 1))
-
 # names of the condition columns
 cond_cols <- c("n_obs", "n_clusters", "n_factors")
 
 #### errors, warnings, non converged starts ####
+# display number of warnings and errors in each step
 results |>
-  summarize(across(step1_warning:step3_error, ~ sum()))
-# no warnings or errors
+  summarize(across(step1_warning:step3_error, ~ sum(.x)))
+# 60 warnings/errors in step3
+unique(results$step3_warning_text)
+unique(results$step3_error_text)
+# --> warnings and errors refer to non-zero status codes
 
+# display number of non-converged starts
 results$nonconvergences |> table()
 
-# maximum of 6 non-convergences
+# remove SEs greater than 1
+results <- results |>
+  filter(if_all(matches("^phi\\d{1,2}_k\\d{1}_se$"), ~ is.na(.x) | .x <= 1))
 
 #### duration in hours (detailed in unique conditions) ####
 mean(results$duration / 3600)
@@ -130,4 +133,6 @@ performance <- map(
   ~ get_performance(results, aspect_var = .x)
 ) |>
   list_rbind()
-print(performance, width = Inf)
+performance |>
+  mutate(across(where(is.numeric), ~ round(.x, 2))) |>
+  print(width = Inf)
