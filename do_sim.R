@@ -582,12 +582,8 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       step2output = output_step2$result$result,
       random_intercept = TRUE
     )
-
-    startval_P0 <- matrix(10, nrow = n_factors, ncol = n_factors)
-    diag(startval_P0) <- 100
     P0_matrix <- create_P0(
       step2output = output_step2$result$result,
-      startvalues = startval_P0,
       random_intercept = TRUE
     )
 
@@ -600,6 +596,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
       n_clusters = n_clusters,
       n_starts = 25,
       n_best_starts = 15,
+      tryhard = TRUE,
       verbose = FALSE
     )
     duration <- difftime(Sys.time(), start, unit = "s")
@@ -661,7 +658,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     )
 
     ## status codes:
-    codes <- output_step3$result$result$status_code
+    codes <- results$status_code
     output_list[["status_k1"]] <- codes[1]
     output_list[["status_k2"]] <- codes[2]
     if (n_clusters == 4) {
