@@ -35,7 +35,7 @@ get_performance <- function(
     mutate(difference = est - pop) |>
     group_by(across(all_of(aspect_var)), param_id) |>
     summarize(
-      bias = mean(difference, na.rm = TRUE),
+      bias = mean(difference),
       .groups = "drop"
     ) |>
     pivot_wider(
@@ -49,7 +49,7 @@ get_performance <- function(
     filter(!is.na(est), !is.na(se)) |>
     group_by(across(all_of(aspect_var)), param_id) |>
     summarize(
-      SE_recovery = mean(se, na.rm = TRUE) / sd(est, na.rm = TRUE),
+      SE_recovery = mean(se) / sd(est),
       .groups = "drop"
     ) |>
     pivot_wider(
@@ -65,9 +65,9 @@ get_performance <- function(
     ) |>
     group_by(across(all_of(aspect_var))) |>
     summarize(
-      mean_ARI = mean(ARI, na.rm = TRUE),
-      mean_convrate = mean(convergence_rate, na.rm = TRUE),
-      mean_comptime = mean(duration / 3600, na.rm = TRUE)
+      mean_ARI = mean(ARI),
+      mean_convrate = mean(convergence_rate),
+      mean_comptime = mean(duration / 3600)
     )
 
   ## combine
@@ -112,13 +112,59 @@ unique(results$step3_error_text)
 # display number of non-converged starts
 results$nonconvergences |> table()
 
-# remove SEs greater than 1
-results <- results |>
+# check codes:
+table(results$status_k1)
+table(results$status_k2)
+table(results$status_k3)
+table(results$status_k4)
+
+# remove all rows where at least one status code is not 0:
+results_clean <- results %>%
+  filter(if_all(
+    c(status_k1, status_k2, status_k3, status_k4),
+    ~ .x == 0 | is.na(.x)
+  ))
+
+# remove all rows where one phi or zeta estimate or se is NA when it should exist:
+results_clean <- results_clean |>
+  filter(
+    # factors 1–2, clusters 1–2: always required
+    if_all(
+      matches("^(phi|zeta)[12][12]_k[12]_(est|se)$"),
+      ~ !is.na(.x)
+    ),
+
+    # factors 1–2, clusters 3–4: required only with 4 clusters
+    n_clusters == 2 |
+      if_all(
+        matches("^(phi|zeta)[12][12]_k[34]_(est|se)$"),
+        ~ !is.na(.x)
+      ),
+
+    # parameters involving factor 3 or 4, clusters 1–2
+    n_factors == 2 |
+      if_all(
+        matches("^(phi|zeta)([34][1-4]|[1-4][34])_k[12]_(est|se)$"),
+        ~ !is.na(.x)
+      ),
+
+    # parameters involving factor 3 or 4, clusters 3–4
+    n_factors == 2 |
+      n_clusters == 2 |
+      if_all(
+        matches("^(phi|zeta)([34][1-4]|[1-4][34])_k[34]_(est|se)$"),
+        ~ !is.na(.x)
+      )
+  )
+
+
+# remove rows with SEs greater than 1
+results_clean <- results_clean |>
   filter(if_all(matches("^phi\\d{1,2}_k\\d{1}_se$"), ~ is.na(.x) | .x <= 1))
 
 #### duration in hours (detailed in unique conditions) ####
-mean(results$duration / 3600)
-results |>
+mean(results_clean$duration / 3600)
+results_clean |>
   group_by(across(all_of(cond_cols))) |>
   summarize(
     duration_avg = mean(duration / 3600, na.rm = TRUE),
@@ -130,7 +176,7 @@ results |>
 #### outcomes (bias, ARI, convergence rate, local maxima, duration) ####
 performance <- map(
   c(list(NULL), as.list(cond_cols)),
-  ~ get_performance(results, aspect_var = .x)
+  ~ get_performance(results_clean, aspect_var = .x)
 ) |>
   list_rbind()
 performance |>
