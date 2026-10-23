@@ -658,7 +658,7 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
     )
 
     ## status codes:
-    codes <- results$status_code
+    codes <- results$status_code |> unname()
     output_list[["status_k1"]] <- codes[1]
     output_list[["status_k2"]] <- codes[2]
     if (n_clusters == 4) {
