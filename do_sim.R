@@ -20,181 +20,169 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   set.seed(seed)
 
   #### set data generation parameters ####
-
   ## regression parameters:
-  # if two factors:
-  if (n_factors == 2) {
-    # Cluster 1: interconnected
-    phimat_k1_pop <- matrix(c(0.7, 0.0, 0.0, 0.7), ncol = 2, byrow = TRUE)
+  # full matrices:
+  phi_k1_full <- matrix(
+    c(0.6, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0.6),
+    ncol = 4,
+    byrow = TRUE
+  )
 
-    # Cluster 2: antagonistic
-    phimat_k2_pop <- matrix(c(0.3, 0.3, 0.3, 0.3), ncol = 2, byrow = TRUE)
+  phi_k2_full <- matrix(
+    c(
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3,
+      0.2,
+      0.2,
+      0.2,
+      0.2,
+      0.3
+    ),
+    ncol = 4,
+    byrow = TRUE
+  )
 
-    if (n_clusters == 4) {
-      # Cluster 3: mixed
-      phimat_k3_pop <- matrix(c(0.6, -0.3, 0.2, 0.1), ncol = 2, byrow = TRUE)
+  phi_k3_full <- matrix(
+    c(
+      0.6,
+      -0.3,
+      0.2,
+      0,
+      0.2,
+      0.1,
+      -0.2,
+      0.2,
+      -0.1,
+      0.2,
+      0.5,
+      -0.2,
+      0.1,
+      0,
+      0,
+      0.2
+    ),
+    ncol = 4,
+    byrow = TRUE
+  )
 
-      # Cluster 4: unconnected
-      phimat_k4_pop <- matrix(c(0.3, -0.2, -0.2, 0.3), ncol = 2, byrow = TRUE)
-    } else {
-      # create matrices with NA if there's only two clusters:
-      phimat_k3_pop <- phimat_k4_pop <- matrix(NA, nrow = 2, ncol = 2)
-    }
-  }
+  phi_k4_full <- matrix(
+    c(
+      0.3,
+      -0.1,
+      -0.1,
+      -0.1,
+      -0.1,
+      0.3,
+      -0.1,
+      -0.1,
+      -0.1,
+      -0.1,
+      0.3,
+      -0.1,
+      -0.1,
+      -0.1,
+      -0.1,
+      0.3
+    ),
+    ncol = 4,
+    byrow = TRUE
+  )
 
-  # if four factors:
-  if (n_factors == 4) {
-    # Cluster 1: interconnected
-    phimat_k1_pop <- matrix(
-      c(
-        0.68,
-        0.00,
-        0.00,
-        0.00,
-        0.00,
-        0.68,
-        0.00,
-        0.00,
-        0.00,
-        0.00,
-        0.68,
-        0.00,
-        0.00,
-        0.00,
-        0.00,
-        0.68
-      ),
-      ncol = 4,
-      byrow = TRUE
+  phimat_k1_pop <- phi_k1_full[1:n_factors, 1:n_factors]
+  phimat_k2_pop <- phi_k2_full[1:n_factors, 1:n_factors]
+
+  if (n_clusters == 2) {
+    phimat_k3_pop <- phimat_k4_pop <- matrix(
+      NA,
+      nrow = n_factors,
+      ncol = n_factors
     )
-
-    # Cluster 2: antagonistic
-    phimat_k2_pop <- matrix(
-      c(
-        0.28,
-        0.25,
-        0.20,
-        0.18,
-        0.25,
-        0.28,
-        0.18,
-        0.20,
-        0.20,
-        0.18,
-        0.28,
-        0.25,
-        0.18,
-        0.20,
-        0.25,
-        0.28
-      ),
-      ncol = 4,
-      byrow = TRUE
-    )
-
-    if (n_clusters == 4) {
-      # Cluster 3: mixed
-      phimat_k3_pop <- matrix(
-        c(
-          0.60,
-          -0.25,
-          0.18,
-          0.05,
-          0.18,
-          0.12,
-          -0.15,
-          0.22,
-          -0.10,
-          0.22,
-          0.48,
-          -0.18,
-          0.12,
-          -0.05,
-          0.08,
-          0.22
-        ),
-        ncol = 4,
-        byrow = TRUE
-      )
-
-      # Cluster 4: unconnected
-      phimat_k4_pop <- matrix(
-        c(
-          0.30,
-          -0.12,
-          -0.08,
-          0.00,
-          -0.12,
-          0.30,
-          0.00,
-          -0.08,
-          -0.08,
-          0.00,
-          0.30,
-          -0.12,
-          0.00,
-          -0.08,
-          -0.12,
-          0.30
-        ),
-        ncol = 4,
-        byrow = TRUE
-      )
-    } else {
-      # create matrices with NA if there's only two clusters:
-      phimat_k3_pop <- phimat_k4_pop <- matrix(NA, nrow = 4, ncol = 4)
-    }
+  } else {
+    phimat_k3_pop <- phi_k3_full[1:n_factors, 1:n_factors]
+    phimat_k4_pop <- phi_k4_full[1:n_factors, 1:n_factors]
   }
 
   ## innovation variances
   # if two factors:
-  if (n_factors == 2) {
-    zetamat_k1_pop <- zetamat_k2_pop <- matrix(
-      c(1.5, .5, .5, 1.5),
-      ncol = 2,
-      byrow = TRUE
+  zeta_full <- matrix(
+    c(
+      200,
+      -50,
+      50,
+      -50,
+      -50,
+      200,
+      -50,
+      50,
+      50,
+      -50,
+      200,
+      -50,
+      -50,
+      50,
+      -50,
+      200
+    ),
+    ncol = 4,
+    byrow = TRUE
+  )
+
+  zetamat_k1_pop <- zeta_full[1:n_factors, 1:n_factors]
+  zetamat_k2_pop <- zeta_full[1:n_factors, 1:n_factors]
+  if (n_clusters == 2) {
+    zetamat_k3_pop <- zetamat_k4_pop <- matrix(
+      NA,
+      nrow = n_factors,
+      ncol = n_factors
     )
-
-    if (n_clusters == 4) {
-      zetamat_k3_pop <- zetamat_k4_pop <- zetamat_k1_pop
-    } else {
-      # create matrices with NA if there's only two clusters:
-      zetamat_k3_pop <- zetamat_k4_pop <- matrix(NA, nrow = 2, ncol = 2)
-    }
-  }
-
-  # if four factors:
-  if (n_factors == 4) {
-    zetamat_k1_pop <- zetamat_k2_pop <- matrix(
-      c(1.5, .5, .5, .5, .5, 1.5, .5, .5, .5, .5, 1.5, .5, .5, .5, .5, 1.5),
-      ncol = 4,
-      byrow = TRUE
-    )
-
-    if (n_clusters == 4) {
-      zetamat_k3_pop <- zetamat_k4_pop <- zetamat_k1_pop
-    } else {
-      # create matrices with NA if there's only two clusters:
-      zetamat_k3_pop <- zetamat_k4_pop <- matrix(NA, nrow = 4, ncol = 4)
-    }
+  } else {
+    zetamat_k3_pop <- zeta_full[1:n_factors, 1:n_factors]
+    zetamat_k4_pop <- zeta_full[1:n_factors, 1:n_factors]
   }
 
   ## grand means
-  if (n_factors == 2) {
-    grandmeans <- c(5, 3)
-  } else {
-    grandmeans <- c(5, 3, 6, 2)
-  }
-  mu_variance <- matrix(.3, nrow = n_factors, ncol = n_factors)
-  diag(mu_variance) <- 1
+  grandmeans <- rep(0, n_factors)
+  muvar_full <- matrix(
+    c(
+      50,
+      -12.5,
+      12.5,
+      -12.5,
+      -12.5,
+      50,
+      -12.5,
+      12.5,
+      12.5,
+      -12.5,
+      50,
+      -12.5,
+      -12.5,
+      12.5,
+      -12.5,
+      50
+    ),
+    ncol = 4,
+    byrow = TRUE
+  )
+
+  mu_variance <- muvar_full[1:n_factors, 1:n_factors]
 
   ## measurement model parameters
   # loadings:
-  lambda_f1_pop <- rep(.8, 4)
-  lambda_f2_pop <- rep(.8, 4)
+  lambda_f1_pop <- c(1, 0.9, 0.6, 0.7)
+  lambda_f2_pop <- c(1, 1.5, 1.4, 1.6)
   if (n_factors == 4) {
-    lambda_f3_pop <- rep(.8, 4)
-    lambda_f4_pop <- rep(.8, 4)
+    lambda_f3_pop <- c(1, 0.8, 0.7, 0.9)
+    lambda_f4_pop <- c(1, 1.2, 1.3, 1.1)
   } else {
     lambda_f3_pop <- lambda_f4_pop <- rep(NA, 4)
   }
@@ -217,11 +205,11 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   }
 
   # residual variances:
-  theta_f1_pop <- rep(.36, 4)
-  theta_f2_pop <- rep(.36, 4)
+  theta_f1_pop <- c(67, 196, 428, 351)
+  theta_f2_pop <- c(450, 204, 304, 373)
   if (n_factors == 4) {
-    theta_f3_pop <- rep(.36, 4)
-    theta_f4_pop <- rep(.36, 4)
+    theta_f3_pop <- c(79, 218, 353, 409)
+    theta_f4_pop <- c(385, 156, 252, 304)
   } else {
     theta_f3_pop <- theta_f4_pop <- rep(NA, 4)
   }
@@ -239,11 +227,11 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   }
 
   # intercepts:
-  tau_f1_pop <- rep(1, 4)
-  tau_f2_pop <- rep(1, 4)
+  tau_f1_pop <- c(55, 53, 57, 59)
+  tau_f2_pop <- c(25, 19, 22, 31)
   if (n_factors == 4) {
-    tau_f3_pop <- rep(1, 4)
-    tau_f4_pop <- rep(1, 4)
+    tau_f3_pop <- c(45, 47, 49, 51)
+    tau_f4_pop <- c(15, 17, 19, 21)
   } else {
     tau_f3_pop <- tau_f4_pop <- rep(NA, 4)
   }
@@ -409,26 +397,26 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   if (n_factors == 2) {
     model_step1 <- list(
       "
-      f1 =~ 0.8*f1_v1 + f1_v2 + f1_v3 + f1_v4
+      f1 =~ f1_v1 + f1_v2 + f1_v3 + f1_v4
       ",
       "
-      f2 =~ 0.8*f2_v1 + f2_v2 + f2_v3 + f2_v4
+      f2 =~ f2_v1 + f2_v2 + f2_v3 + f2_v4
       "
     )
   }
   if (n_factors == 4) {
     model_step1 <- list(
       "
-      f1 =~ 0.8*f1_v1 + f1_v2 + f1_v3 + f1_v4
+      f1 =~ f1_v1 + f1_v2 + f1_v3 + f1_v4
       ",
       "
-      f2 =~ 0.8*f2_v1 + f2_v2 + f2_v3 + f2_v4
+      f2 =~ f2_v1 + f2_v2 + f2_v3 + f2_v4
       ",
       "
-      f3 =~ 0.8*f3_v1 + f3_v2 + f3_v3 + f3_v4
+      f3 =~ f3_v1 + f3_v2 + f3_v3 + f3_v4
       ",
       "
-      f4 =~ 0.8*f4_v1 + f4_v2 + f4_v3 + f4_v4
+      f4 =~ f4_v1 + f4_v2 + f4_v3 + f4_v4
       "
     )
   }
