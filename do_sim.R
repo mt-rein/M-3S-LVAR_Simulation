@@ -12,7 +12,6 @@ do_sim <- function(pos, cond, outputfile, verbose = FALSE) {
   )
 
   # get condition levels and set seed:
-  n_persons <- output_list[["n_persons"]] <- cond$n_persons[pos]
   n_obs <- output_list[["n_obs"]] <- cond$n_obs[pos]
   n_clusters <- output_list[["n_clusters"]] <- cond$n_clusters[pos]
   n_factors <- output_list[["n_factors"]] <- cond$n_factors[pos]

@@ -30,32 +30,74 @@ get_performance <- function(
     mutate(param_id = paste(parameter, cluster, sep = "_"))
 
   # compute bias per parameter (grouped by aspect_var)
+  # Compute bias, its Monte Carlo standard error, and a 95% CI
   bias <- long_results |>
     filter(!is.na(est), !is.na(pop)) |>
     mutate(difference = est - pop) |>
     group_by(across(all_of(aspect_var)), param_id) |>
     summarize(
+      n_iterations = n(),
       bias = mean(difference),
+      sd_difference = sd(difference),
       .groups = "drop"
     ) |>
+    mutate(
+      MCSE_bias = sd_difference / sqrt(n_iterations),
+      ci_lower_bias = bias -
+        qt(0.975, df = pmax(n_iterations - 1L, 1L)) * MCSE_bias,
+      ci_upper_bias = bias +
+        qt(0.975, df = pmax(n_iterations - 1L, 1L)) * MCSE_bias
+    ) |>
+    select(-sd_difference, -n_iterations) |>
     pivot_wider(
       names_from = param_id,
-      values_from = bias,
-      names_prefix = "bias_"
+      values_from = c(bias, MCSE_bias, ci_lower_bias, ci_upper_bias),
+      names_glue = "{.value}_{param_id}"
     )
 
-  # compute SE recovery per parameter (grouped by aspect_var)
+  # Compute Relative % error in ModSE per parameter (grouped by aspect_var)
+  # following Morris et al. (2019), Table 6
   se_recovery <- long_results |>
     filter(!is.na(est), !is.na(se)) |>
     group_by(across(all_of(aspect_var)), param_id) |>
     summarize(
-      SE_recovery = mean(se) / sd(est),
+      n_iterations = n(),
+      # EmpSE: empirical SD of the estimates
+      EmpSE = sd(est),
+      # ModSE: root-mean of the squared model SEs  [i.e. sqrt(mean(se^2))]
+      ModSE = sqrt(mean(se^2)),
+      # Var[Var_hat(theta_hat)]: variance of the per-iteration squared SEs
+      # (se_i^2 is the per-iteration variance estimate)
+      var_of_var = var(se^2),
       .groups = "drop"
     ) |>
+    mutate(
+      # Relative % error in ModSE  (Morris 2019, Table 6)
+      relpcte = 100 * (ModSE / EmpSE - 1),
+      # Monte Carlo SE for Relative % error in ModSE (Morris 2019, Table 6)
+      MCSE_relpcte = 100 *
+        (ModSE / EmpSE) *
+        sqrt(
+          var_of_var /
+            (4 * n_iterations * ModSE^4) +
+            1 / (2 * (n_iterations - 1))
+        ),
+      # 95% CI
+      ci_lower_relpcte = relpcte -
+        qt(0.975, df = pmax(n_iterations - 1L, 1L)) * MCSE_relpcte,
+      ci_upper_relpcte = relpcte +
+        qt(0.975, df = pmax(n_iterations - 1L, 1L)) * MCSE_relpcte
+    ) |>
+    select(-n_iterations, -EmpSE, -ModSE, -var_of_var) |>
     pivot_wider(
       names_from = param_id,
-      values_from = SE_recovery,
-      names_prefix = "SErec_"
+      values_from = c(
+        relpcte,
+        MCSE_relpcte,
+        ci_lower_relpcte,
+        ci_upper_relpcte
+      ),
+      names_glue = "{.value}_{param_id}"
     )
 
   ## compute ARI, convergence rate, and computation time
@@ -67,10 +109,12 @@ get_performance <- function(
     summarize(
       mean_ARI = mean(ARI),
       mean_convrate = mean(convergence_rate),
-      mean_comptime = mean(duration / 3600)
+      mean_comptime = mean(duration / 3600),
+      .groups = "drop"
     )
 
-  ## combine
+  #
+  # combine
   if (is.null(aspect_var)) {
     outcomes <- bind_cols(bias, se_recovery, outcomes)
   } else {
@@ -85,11 +129,46 @@ get_performance <- function(
       mutate(aspect = "overall", level = NA_character_, .before = everything())
   } else {
     outcomes <- outcomes |>
-      rename(level = !!aspect_var) |>
-      mutate(aspect = aspect_var, .before = level) |>
+      mutate(
+        # paste the variable names together, e.g. "n_factors:n_obs"
+        aspect = paste(aspect_var, collapse = ":"),
+        # paste the corresponding values together, e.g. "100:20"
+        level = paste(!!!syms(aspect_var), sep = ":"),
+        .before = everything()
+      ) |>
+      # drop the original individual aspect columns (now redundant)
+      select(-all_of(aspect_var)) |>
       mutate(level = as.character(level))
   }
 
+  # reorder columns: group all metrics per parameter together
+  # get all param_ids from the column names (using bias_ prefix as reference)
+  param_ids <- unique(long_results$param_id)
+
+  param_col_order <- purrr::map(param_ids, function(pid) {
+    c(
+      paste0("bias_", pid),
+      paste0("MCSE_bias_", pid),
+      paste0("ci_lower_bias_", pid),
+      paste0("ci_upper_bias_", pid),
+      paste0("relpcte_", pid),
+      paste0("MCSE_relpcte_", pid),
+      paste0("ci_lower_relpcte_", pid),
+      paste0("ci_upper_relpcte_", pid)
+    )
+  }) |>
+    purrr::list_c()
+
+  # reorder: bookkeeping columns first, then parameter columns, then other outcomes
+  outcomes <- outcomes |>
+    select(
+      any_of(c("aspect", "level")),
+      # bookkeeping
+      any_of(param_col_order),
+      # parameter metrics, grouped by param_id
+      everything()
+      # remaining cols (mean_ARI, mean_convrate, etc.)
+    )
   return(outcomes)
 }
 
@@ -173,12 +252,19 @@ results_clean |>
   )
 
 
+#### split into two data frames: one with two clusters and one with four clusters ####
+results_2k <- results_clean |>
+  filter(n_clusters == 2)
+
+results_4k <- results_clean |>
+  filter(n_clusters == 4)
+
 #### outcomes (bias, ARI, convergence rate, local maxima, duration) ####
-performance <- map(
-  c(list(NULL), as.list(cond_cols)),
-  ~ get_performance(results_clean, aspect_var = .x)
+performance_2k <- map(
+  c(list(NULL), as.list(cond_cols[-3])),
+  ~ get_performance(results_2k, aspect_var = .x)
 ) |>
   list_rbind()
-performance |>
+performance_2k |>
   mutate(across(where(is.numeric), ~ round(.x, 2))) |>
   print(width = Inf)

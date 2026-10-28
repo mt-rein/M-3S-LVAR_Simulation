@@ -25,8 +25,7 @@ source("auxiliary_functions.R")
 
 #### define condition grid
 cond <- expand.grid(
-  replication = 1:50,
-  n_persons = c(60, 120),
+  replication = 1:100,
   n_obs = c(56, 112),
   n_clusters = c(2, 4),
   n_factors = c(2, 4)
